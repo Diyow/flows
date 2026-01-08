@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Droplets, Mail, Lock, AlertCircle, ArrowLeft, Info } from 'lucide-react';
+import { Mail, Lock, AlertCircle, ArrowLeft, Info } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -46,11 +47,17 @@ export default function LoginPage() {
                 <div className="p-8 rounded-2xl bg-gray-800/50 border border-gray-700">
                     {/* Header */}
                     <div className="text-center mb-8">
-                        <div className="inline-flex p-4 rounded-2xl bg-cyan-500/20 mb-4">
-                            <Droplets className="w-10 h-10 text-cyan-400" />
-                        </div>
+                        <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
+                            <Image
+                                src="/FLOWS.png"
+                                alt="FLOWS Logo"
+                                width={80}
+                                height={80}
+                                className="mx-auto mb-4"
+                            />
+                        </Link>
                         <h1 className="text-2xl font-bold text-white">Admin Login</h1>
-                        <p className="text-gray-400 mt-2">Access the monitoring dashboard</p>
+                        <p className="text-gray-400 mt-2">Access the FLOWS monitoring dashboard</p>
                     </div>
 
                     {/* Firebase Not Configured Warning */}

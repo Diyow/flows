@@ -13,7 +13,7 @@ interface EmergencyContact {
 
 const emergencyContacts: EmergencyContact[] = [
     { nameKey: 'police', number: '110', icon: Shield, color: 'text-blue-400' },
-    { nameKey: 'ambulance', number: '118', icon: Ambulance, color: 'text-red-400' },
+    { nameKey: 'ambulance', number: '119', icon: Ambulance, color: 'text-red-400' },
     { nameKey: 'fireDept', number: '113', icon: Flame, color: 'text-orange-400' },
     { nameKey: 'emergencyHotline', number: '112', icon: Phone, color: 'text-green-400' },
 ];

@@ -42,7 +42,7 @@ export function ThresholdControls({ settings, onUpdate }: ThresholdControlsProps
     return (
         <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
             <div className="flex items-center gap-2 mb-6">
-                <Settings className="w-5 h-5 text-purple-400" />
+                <Settings className="w-5 h-5 text-cyan-400" />
                 <h3 className="text-lg font-semibold text-white">Threshold Settings</h3>
             </div>
 
@@ -96,7 +96,7 @@ export function ThresholdControls({ settings, onUpdate }: ThresholdControlsProps
 
                 {/* Flow Rate Section */}
                 <div className="pb-4 border-b border-gray-700">
-                    <h4 className="text-sm font-medium text-purple-400 mb-4">Flow Rate Thresholds</h4>
+                    <h4 className="text-sm font-medium text-teal-400 mb-4">Flow Rate Thresholds</h4>
 
                     {/* Warning Flow */}
                     <div className="mb-4">
@@ -155,8 +155,8 @@ export function ThresholdControls({ settings, onUpdate }: ThresholdControlsProps
                     onClick={handleSave}
                     disabled={saving || hasValidation}
                     className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${saved
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                            : 'bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30'
                         } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                     <Save className="w-4 h-4" />

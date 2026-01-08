@@ -7,7 +7,7 @@ interface StatsCardProps {
     value: string | number;
     subtitle?: string;
     icon: LucideIcon;
-    color: 'blue' | 'green' | 'amber' | 'red' | 'purple';
+    color: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'cyan';
 }
 
 const colorClasses = {
@@ -16,6 +16,7 @@ const colorClasses = {
     amber: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
     red: 'bg-red-500/10 border-red-500/30 text-red-400',
     purple: 'bg-purple-500/10 border-purple-500/30 text-purple-400',
+    cyan: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400',
 };
 
 const iconBgClasses = {
@@ -24,6 +25,7 @@ const iconBgClasses = {
     amber: 'bg-amber-500/20',
     red: 'bg-red-500/20',
     purple: 'bg-purple-500/20',
+    cyan: 'bg-cyan-500/20',
 };
 
 export function StatsCard({ title, value, subtitle, icon: Icon, color }: StatsCardProps) {

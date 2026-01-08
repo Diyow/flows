@@ -1,15 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import { MapPin, ExternalLink, Navigation } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
-
-// Sensor location: Denpasar, Sidakarya
-const SENSOR_LOCATION = {
-    lat: -8.7115,
-    lng: 115.2277,
-};
 
 const mapContainerStyle = {
     width: '100%',
@@ -24,7 +18,6 @@ const mapOptions = {
     streetViewControl: false,
     fullscreenControl: false,
     styles: [
-        // Dark mode map styling
         { elementType: 'geometry', stylers: [{ color: '#212121' }] },
         { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
         { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
@@ -45,16 +38,22 @@ const mapOptions = {
 };
 
 interface SensorMapProps {
+    location: {
+        name: string;
+        lat: number;
+        lng: number;
+    };
     currentLevel?: number;
     currentFlow?: number;
     status?: 'safe' | 'warning' | 'danger';
 }
 
-export function SensorMap({ currentLevel = 0, currentFlow = 0, status = 'safe' }: SensorMapProps) {
+export function SensorMap({ location, currentLevel = 0, currentFlow = 0, status = 'safe' }: SensorMapProps) {
     const { t } = useTranslation();
     const [showInfoWindow, setShowInfoWindow] = useState(false);
     const [map, setMap] = useState<google.maps.Map | null>(null);
 
+    const sensorPosition = { lat: location.lat, lng: location.lng };
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     const { isLoaded, loadError } = useJsApiLoader({
@@ -78,7 +77,7 @@ export function SensorMap({ currentLevel = 0, currentFlow = 0, status = 'safe' }
         }
     };
 
-    const googleMapsUrl = `https://www.google.com/maps?q=${SENSOR_LOCATION.lat},${SENSOR_LOCATION.lng}`;
+    const googleMapsUrl = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
 
     // Handle case where API key is not configured
     if (!apiKey || apiKey === 'your_google_maps_key') {
@@ -105,7 +104,7 @@ export function SensorMap({ currentLevel = 0, currentFlow = 0, status = 'safe' }
                 </div>
 
                 <div className="mt-4 text-center text-gray-500 text-sm">
-                    📍 Denpasar, Sidakarya (-8.7115, 115.2277)
+                    📍 {location.name} ({location.lat.toFixed(4)}, {location.lng.toFixed(4)})
                 </div>
             </div>
         );
@@ -155,14 +154,14 @@ export function SensorMap({ currentLevel = 0, currentFlow = 0, status = 'safe' }
             <div className="rounded-xl overflow-hidden border border-gray-700">
                 <GoogleMap
                     mapContainerStyle={mapContainerStyle}
-                    center={SENSOR_LOCATION}
+                    center={sensorPosition}
                     zoom={15}
                     onLoad={onLoad}
                     onUnmount={onUnmount}
                     options={mapOptions}
                 >
                     <Marker
-                        position={SENSOR_LOCATION}
+                        position={sensorPosition}
                         onClick={() => setShowInfoWindow(true)}
                         icon={{
                             path: google.maps.SymbolPath.CIRCLE,
@@ -176,7 +175,7 @@ export function SensorMap({ currentLevel = 0, currentFlow = 0, status = 'safe' }
 
                     {showInfoWindow && (
                         <InfoWindow
-                            position={SENSOR_LOCATION}
+                            position={sensorPosition}
                             onCloseClick={() => setShowInfoWindow(false)}
                         >
                             <div className="p-2 min-w-[150px]">
@@ -195,7 +194,7 @@ export function SensorMap({ currentLevel = 0, currentFlow = 0, status = 'safe' }
             <div className="mt-4 flex flex-col items-center gap-2 text-sm text-gray-500">
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getMarkerColor() }} />
-                    <span>Denpasar, Sidakarya</span>
+                    <span>{location.name}</span>
                 </div>
                 <p className="text-center text-xs text-amber-400/80 px-4">
                     {t('sensorDisclaimer')}

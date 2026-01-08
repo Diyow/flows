@@ -125,7 +125,7 @@ export function WaterLevelChart({
                                 type="monotone"
                                 dataKey="flow"
                                 name="Flow Rate (m³/s)"
-                                stroke="#8b5cf6"
+                                stroke="#14b8a6"
                                 strokeWidth={2}
                                 dot={false}
                                 activeDot={{ r: 4 }}
@@ -142,7 +142,7 @@ export function WaterLevelChart({
                 </div>
                 {showFlow && (
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-purple-500" />
+                        <div className="w-3 h-3 rounded-full bg-teal-500" />
                         <span className="text-gray-400">Flow Rate</span>
                     </div>
                 )}

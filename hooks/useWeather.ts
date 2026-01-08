@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface WeatherData {
     current: {
@@ -22,22 +22,29 @@ export interface WeatherData {
     }>;
     location: string;
     lastFetched: number;
+    coordinates: { lat: number; lng: number };
 }
 
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
-const CACHE_KEY = 'floodwatch-weather-cache';
 
-// Denpasar, Sidakarya coordinates
-const LOCATION = {
-    lat: -8.7115,
-    lon: 115.2277,
-    name: 'Denpasar, Sidakarya'
-};
+interface UseWeatherOptions {
+    lat: number;
+    lng: number;
+    name: string;
+}
 
-export function useWeather() {
+export function useWeather(options: UseWeatherOptions) {
+    const { lat, lng, name } = options;
     const [weather, setWeather] = useState<WeatherData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Track if location changed to force refresh
+    const prevLocationRef = useRef({ lat, lng });
+
+    const getCacheKey = useCallback(() => {
+        return `floodwatch-weather-${lat.toFixed(4)}-${lng.toFixed(4)}`;
+    }, [lat, lng]);
 
     const fetchWeather = useCallback(async (forceRefresh = false) => {
         const apiKey = process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY;
@@ -48,10 +55,12 @@ export function useWeather() {
             return;
         }
 
+        const cacheKey = getCacheKey();
+
         // Check cache first (unless forcing refresh)
         if (!forceRefresh) {
             try {
-                const cached = localStorage.getItem(CACHE_KEY);
+                const cached = localStorage.getItem(cacheKey);
                 if (cached) {
                     const parsedCache: WeatherData = JSON.parse(cached);
                     const now = Date.now();
@@ -73,7 +82,7 @@ export function useWeather() {
 
             // Fetch current weather
             const currentRes = await fetch(
-                `https://api.openweathermap.org/data/2.5/weather?lat=${LOCATION.lat}&lon=${LOCATION.lon}&appid=${apiKey}&units=metric`
+                `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`
             );
 
             if (!currentRes.ok) {
@@ -84,7 +93,7 @@ export function useWeather() {
 
             // Fetch 5-day forecast
             const forecastRes = await fetch(
-                `https://api.openweathermap.org/data/2.5/forecast?lat=${LOCATION.lat}&lon=${LOCATION.lon}&appid=${apiKey}&units=metric`
+                `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`
             );
 
             if (!forecastRes.ok) {
@@ -125,13 +134,14 @@ export function useWeather() {
                     rainChance: currentData.rain?.['1h'] ? 80 : (currentData.clouds?.all > 70 ? 50 : 20),
                 },
                 forecast: dailyForecasts,
-                location: LOCATION.name,
+                location: name,
                 lastFetched: Date.now(),
+                coordinates: { lat, lng },
             };
 
             // Cache the result
             try {
-                localStorage.setItem(CACHE_KEY, JSON.stringify(weatherData));
+                localStorage.setItem(cacheKey, JSON.stringify(weatherData));
             } catch (e) {
                 console.error('Cache write error:', e);
             }
@@ -144,7 +154,7 @@ export function useWeather() {
 
             // Try to use stale cache as fallback
             try {
-                const cached = localStorage.getItem(CACHE_KEY);
+                const cached = localStorage.getItem(getCacheKey());
                 if (cached) {
                     setWeather(JSON.parse(cached));
                 }
@@ -154,12 +164,21 @@ export function useWeather() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [lat, lng, name, getCacheKey]);
 
-    // Fetch weather on mount
+    // Fetch weather on mount and when location changes
     useEffect(() => {
-        fetchWeather();
-    }, [fetchWeather]);
+        const locationChanged =
+            prevLocationRef.current.lat !== lat ||
+            prevLocationRef.current.lng !== lng;
+
+        if (locationChanged) {
+            prevLocationRef.current = { lat, lng };
+            fetchWeather(true); // Force refresh on location change
+        } else {
+            fetchWeather();
+        }
+    }, [lat, lng, fetchWeather]);
 
     return {
         weather,

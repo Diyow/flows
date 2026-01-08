@@ -37,7 +37,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
     // Translation function with parameter support
     const t = (key: TranslationKey, params?: Record<string, string | number>): string => {
-        let text = translations[language][key] || translations.en[key] || key;
+        let text: string = translations[language][key] || translations.en[key] || key;
 
         // Replace parameters like {count} with actual values
         if (params) {

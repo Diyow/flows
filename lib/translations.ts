@@ -3,8 +3,8 @@ export type Language = 'en' | 'id';
 export const translations = {
     en: {
         // Header
-        appName: 'FloodWatch',
-        tagline: 'Real-Time Monitoring',
+        appName: 'FLOWS',
+        tagline: 'Flood Level Observation & Warning System',
         updated: 'Updated',
         admin: 'Admin',
         publicView: 'Public View',
@@ -50,6 +50,16 @@ export const translations = {
         sensorInfo: 'Water Level Sensor',
         viewOnMaps: 'View on Google Maps',
         sensorDisclaimer: '⚠️ This is an example sensor location for prototype demonstration. Data shown is simulated.',
+
+        // Location Settings
+        locationSettings: 'Location Settings',
+        locationName: 'Location Name',
+        latitude: 'Latitude',
+        longitude: 'Longitude',
+        clickToSetLocation: 'Click on map to set location',
+        locationHelperText: 'This location will be used for weather forecasts and the sensor map marker on the public page.',
+        resetToDefault: 'Reset to Default',
+        saveLocation: 'Save Location',
 
         // Emergency
         emergencyContacts: 'Emergency Contacts',
@@ -114,15 +124,33 @@ export const translations = {
         invalidCredentials: 'Invalid email or password. Please try again.',
         backToDashboard: 'Back to Dashboard',
 
+        // Admin Users
+        adminUsers: 'Admin Users',
+        addAdmin: 'Add Admin',
+        createAdmin: 'Create Admin',
+        newAdmin: 'Add New Admin',
+        lastAccess: 'Last access',
+        created: 'Created',
+        active: 'Active',
+        disabled: 'Disabled',
+        enable: 'Enable',
+        disable: 'Disable',
+        you: 'You',
+        noAdmins: 'No admin users found',
+        disabledAdminsNote: 'Disabled admins cannot access the admin dashboard',
+        accountDisabled: 'Account is disabled. Contact an administrator.',
+        cannotDisableSelf: 'You cannot disable your own account',
+        cannotDisableLast: 'Cannot disable the last active admin',
+
         // Footer
         allRightsReserved: 'All Rights Reserved',
         loggedInAs: 'Logged in as',
-        adminPanel: 'FloodWatch Admin Panel',
+        adminPanel: 'FLOWS Admin Panel',
     },
 
     id: {
         // Header
-        appName: 'FloodWatch',
+        appName: 'FLOWS',
         tagline: 'Pemantauan Real-Time',
         updated: 'Diperbarui',
         admin: 'Admin',
@@ -169,6 +197,16 @@ export const translations = {
         sensorInfo: 'Sensor Ketinggian Air',
         viewOnMaps: 'Lihat di Google Maps',
         sensorDisclaimer: '⚠️ Ini adalah contoh lokasi sensor untuk demonstrasi prototipe. Data yang ditampilkan adalah simulasi.',
+
+        // Location Settings
+        locationSettings: 'Pengaturan Lokasi',
+        locationName: 'Nama Lokasi',
+        latitude: 'Lintang',
+        longitude: 'Bujur',
+        clickToSetLocation: 'Klik pada peta untuk mengatur lokasi',
+        locationHelperText: 'Lokasi ini akan digunakan untuk prakiraan cuaca dan penanda peta sensor di halaman publik.',
+        resetToDefault: 'Reset ke Default',
+        saveLocation: 'Simpan Lokasi',
 
         // Emergency
         emergencyContacts: 'Kontak Darurat',
@@ -233,10 +271,28 @@ export const translations = {
         invalidCredentials: 'Email atau kata sandi salah. Silakan coba lagi.',
         backToDashboard: 'Kembali ke Dashboard',
 
+        // Admin Users
+        adminUsers: 'Pengguna Admin',
+        addAdmin: 'Tambah Admin',
+        createAdmin: 'Buat Admin',
+        newAdmin: 'Tambah Admin Baru',
+        lastAccess: 'Akses terakhir',
+        created: 'Dibuat',
+        active: 'Aktif',
+        disabled: 'Dinonaktifkan',
+        enable: 'Aktifkan',
+        disable: 'Nonaktifkan',
+        you: 'Anda',
+        noAdmins: 'Tidak ada pengguna admin',
+        disabledAdminsNote: 'Admin yang dinonaktifkan tidak dapat mengakses dashboard admin',
+        accountDisabled: 'Akun dinonaktifkan. Hubungi administrator.',
+        cannotDisableSelf: 'Anda tidak dapat menonaktifkan akun sendiri',
+        cannotDisableLast: 'Tidak dapat menonaktifkan admin aktif terakhir',
+
         // Footer
         allRightsReserved: 'Hak Cipta Dilindungi',
         loggedInAs: 'Masuk sebagai',
-        adminPanel: 'Panel Admin FloodWatch',
+        adminPanel: 'Panel Admin FLOWS',
     },
 } as const;
 

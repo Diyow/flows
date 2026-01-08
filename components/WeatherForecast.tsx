@@ -1,6 +1,6 @@
 'use client';
 
-import { Cloud, CloudRain, Sun, Thermometer, Droplets, Wind, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Cloud, CloudRain, Sun, Droplets, Wind, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useWeather } from '@/hooks/useWeather';
 import { useTranslation } from '@/context/LanguageContext';
 
@@ -12,8 +12,20 @@ function getWeatherIcon(iconCode: string) {
     return Cloud;
 }
 
-export function WeatherForecast() {
-    const { weather, loading, error, refresh, isHighRainRisk } = useWeather();
+interface WeatherForecastProps {
+    location: {
+        name: string;
+        lat: number;
+        lng: number;
+    };
+}
+
+export function WeatherForecast({ location }: WeatherForecastProps) {
+    const { weather, loading, error, refresh, isHighRainRisk } = useWeather({
+        lat: location.lat,
+        lng: location.lng,
+        name: location.name,
+    });
     const { t } = useTranslation();
 
     if (loading) {
@@ -116,8 +128,8 @@ export function WeatherForecast() {
                             <div
                                 key={day.date}
                                 className={`p-3 rounded-xl text-center transition-colors ${isHighRain
-                                        ? 'bg-amber-500/10 border border-amber-500/30'
-                                        : 'bg-gray-900/50 hover:bg-gray-900/70'
+                                    ? 'bg-amber-500/10 border border-amber-500/30'
+                                    : 'bg-gray-900/50 hover:bg-gray-900/70'
                                     }`}
                             >
                                 <p className="text-xs text-gray-400 mb-1">

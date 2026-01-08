@@ -4,20 +4,17 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useWaterData } from '@/hooks/useWaterData';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { StatsCard } from '@/components/StatsCard';
-import { ThresholdControls } from '@/components/ThresholdControls';
-import { EventLogs } from '@/components/EventLogs';
 import {
     Droplets,
     Gauge,
     Wifi,
     Clock,
-    LogOut,
-    Bell,
-    Home,
-    AlertTriangle
+    AlertTriangle,
+    ShieldCheck
 } from 'lucide-react';
-import Link from 'next/link';
 
 export default function AdminPage() {
     const { user, loading, signOut } = useAuth();
@@ -25,13 +22,9 @@ export default function AdminPage() {
     const {
         currentLevel,
         currentFlow,
-        settings,
-        logs,
         lastUpdate,
         isOnline,
-        status,
-        updateThresholds,
-        addLogEntry
+        status
     } = useWaterData();
 
     // Redirect to login if not authenticated
@@ -40,11 +33,6 @@ export default function AdminPage() {
             router.push('/login');
         }
     }, [user, loading, router]);
-
-    // Handle test alarm
-    const handleTestAlarm = async () => {
-        await addLogEntry('Manual test alarm triggered by admin', 'alert');
-    };
 
     // Handle sign out
     const handleSignOut = async () => {
@@ -72,39 +60,19 @@ export default function AdminPage() {
     return (
         <div className="min-h-screen bg-[#0a0a0f]">
             {/* Header */}
-            <header className="sticky top-0 z-50 glass border-b border-gray-800">
-                <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-purple-500/20">
-                            <Droplets className="w-6 h-6 text-purple-400" />
-                        </div>
-                        <div>
-                            <h1 className="text-lg font-bold text-white">Admin Dashboard</h1>
-                            <p className="text-xs text-gray-400">{user.email}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href="/"
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm transition-colors"
-                        >
-                            <Home className="w-4 h-4" />
-                            <span className="hidden sm:inline">Public View</span>
-                        </Link>
-                        <button
-                            onClick={handleSignOut}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm transition-colors"
-                        >
-                            <LogOut className="w-4 h-4" />
-                            <span className="hidden sm:inline">Sign Out</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
+            <Header variant="admin" userEmail={user.email || undefined} onSignOut={handleSignOut} />
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-6 md:space-y-8">
+                {/* Admin Dashboard Title Section */}
+                <section className="text-center py-8">
+                    <div className="inline-flex p-4 rounded-2xl bg-cyan-500/20 mb-4">
+                        <ShieldCheck className="w-12 h-12 text-cyan-400" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h2>
+                    <p className="text-gray-400">Welcome back, {user.email}</p>
+                </section>
+
                 {/* Stats Cards */}
                 <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatsCard
@@ -119,7 +87,7 @@ export default function AdminPage() {
                         value={`${currentFlow.toFixed(1)} m³/s`}
                         subtitle="Current flow"
                         icon={Droplets}
-                        color="purple"
+                        color="cyan"
                     />
                     <StatsCard
                         title="Device Status"
@@ -157,84 +125,31 @@ export default function AdminPage() {
                     </section>
                 )}
 
-                {/* Controls Grid */}
-                <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Threshold Controls */}
-                    <ThresholdControls
-                        settings={settings}
-                        onUpdate={updateThresholds}
-                    />
-
-                    {/* Manual Controls */}
-                    <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
-                        <div className="flex items-center gap-2 mb-6">
-                            <Bell className="w-5 h-5 text-amber-400" />
-                            <h3 className="text-lg font-semibold text-white">Manual Controls</h3>
-                        </div>
-
-                        <div className="space-y-4">
-                            <p className="text-gray-400 text-sm">
-                                Use these controls to manually trigger system actions for testing purposes.
-                            </p>
-
-                            <button
-                                onClick={handleTestAlarm}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 font-medium hover:bg-amber-500/30 transition-colors"
-                            >
-                                <Bell className="w-5 h-5" />
-                                Test Alarm
-                            </button>
-
-                            <p className="text-gray-500 text-xs text-center">
-                                This will create a test event in the logs without affecting real alerts
-                            </p>
-                        </div>
-
-                        {/* Quick Stats */}
-                        <div className="mt-6 pt-6 border-t border-gray-700">
-                            <h4 className="text-sm font-medium text-gray-400 mb-4">Current Thresholds</h4>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
-                                    <p className="text-xs text-gray-400">Level Warn</p>
-                                    <p className="text-lg font-bold text-amber-400">{settings.warningLevel}m</p>
-                                </div>
-                                <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-center">
-                                    <p className="text-xs text-gray-400">Level Danger</p>
-                                    <p className="text-lg font-bold text-red-400">{settings.dangerLevel}m</p>
-                                </div>
-                                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
-                                    <p className="text-xs text-gray-400">Flow Warn</p>
-                                    <p className="text-lg font-bold text-amber-400">{settings.warningFlow}</p>
-                                </div>
-                                <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-center">
-                                    <p className="text-xs text-gray-400">Flow Danger</p>
-                                    <p className="text-lg font-bold text-red-400">{settings.dangerFlow}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Event Logs */}
-                <section>
-                    <EventLogs logs={logs} />
-                </section>
+                {/* Iteration 1 Notice */}
+                {/* <section className="p-6 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                    <h3 className="text-lg font-semibold text-blue-400 mb-2">Iteration 1 - Admin Features</h3>
+                    <p className="text-gray-400 text-sm">
+                        This is the admin dashboard for FLOWS. In this iteration, the following features are available:
+                    </p>
+                    <ul className="mt-4 space-y-2 text-gray-300 text-sm">
+                        <li className="flex items-center gap-2">
+                            <span className="text-emerald-400">✓</span> View Water Level & Flow Rate
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span className="text-emerald-400">✓</span> View System Status
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span className="text-emerald-400">✓</span> Admin Login / Logout
+                        </li>
+                    </ul>
+                    <p className="text-gray-500 text-xs mt-4">
+                        Additional features like threshold management, location settings, and user management will be available in future iterations.
+                    </p>
+                </section> */}
             </main>
 
             {/* Footer */}
-            <footer className="border-t border-gray-800 mt-12">
-                <div className="max-w-7xl mx-auto px-4 py-6">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-gray-500 text-sm">
-                        <div className="flex items-center gap-2">
-                            <Droplets className="w-4 h-4 text-purple-400" />
-                            <span>FloodWatch Admin Panel</span>
-                        </div>
-                        <div>
-                            Logged in as: <span className="text-gray-300">{user.email}</span>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+            <Footer variant="admin" userEmail={user.email || undefined} />
         </div>
     );
 }

@@ -81,7 +81,7 @@ export function StatusIndicator({ status, currentLevel, currentFlow }: StatusInd
                     {/* Water Flow */}
                     <div className="px-6 py-3 rounded-xl bg-gray-800/50 border border-gray-700">
                         <div className="flex items-center gap-2 mb-1">
-                            <Waves className="w-4 h-4 text-blue-400" />
+                            <Waves className="w-4 h-4 text-cyan-400" />
                             <span className="text-gray-400 text-sm uppercase tracking-wide">Flow Rate</span>
                         </div>
                         <div className={`text-3xl md:text-4xl font-bold ${config.textClass}`}>
