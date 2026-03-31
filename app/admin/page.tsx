@@ -43,7 +43,7 @@ export default function AdminPage() {
     // Show loading state
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4" />
                     <p className="text-gray-400">Loading dashboard...</p>
@@ -58,17 +58,15 @@ export default function AdminPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0a0a0f]">
+        <div className="min-h-screen bg-gray-900">
             {/* Header */}
             <Header variant="admin" userEmail={user.email || undefined} onSignOut={handleSignOut} />
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-6 md:space-y-8">
+            <main className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-6">
                 {/* Admin Dashboard Title Section */}
                 <section className="text-center py-8">
-                    <div className="inline-flex p-4 rounded-2xl bg-cyan-500/20 mb-4">
-                        <ShieldCheck className="w-12 h-12 text-cyan-400" />
-                    </div>
+                    <ShieldCheck className="w-16 h-16 text-cyan-400 mx-auto mb-4" />
                     <h2 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h2>
                     <p className="text-gray-400">Welcome back, {user.email}</p>
                 </section>
@@ -107,9 +105,9 @@ export default function AdminPage() {
 
                 {/* Current Status Alert */}
                 {status !== 'safe' && (
-                    <section className={`p-4 rounded-xl border flex items-center gap-4 ${status === 'danger'
-                        ? 'bg-red-500/10 border-red-500/30'
-                        : 'bg-amber-500/10 border-amber-500/30'
+                    <section className={`p-4 rounded-lg border flex items-center gap-4 ${status === 'danger'
+                        ? 'bg-red-900/30 border-red-500'
+                        : 'bg-amber-900/30 border-amber-500'
                         }`}>
                         <AlertTriangle className={`w-6 h-6 ${status === 'danger' ? 'text-red-400' : 'text-amber-400'
                             }`} />
@@ -126,7 +124,7 @@ export default function AdminPage() {
                 )}
 
                 {/* Iteration 1 Notice */}
-                {/* <section className="p-6 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                {/* <section className="p-6 rounded-lg bg-blue-900/30 border border-blue-500">
                     <h3 className="text-lg font-semibold text-blue-400 mb-2">Iteration 1 - Admin Features</h3>
                     <p className="text-gray-400 text-sm">
                         This is the admin dashboard for FLOWS. In this iteration, the following features are available:

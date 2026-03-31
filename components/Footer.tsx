@@ -14,9 +14,9 @@ export function Footer({ variant = 'public', userEmail }: FooterProps) {
     const { t } = useTranslation();
 
     return (
-        <footer className="border-t border-gray-800 mt-12">
+        <footer className="border-t border-gray-600 mt-12 bg-gray-800">
             <div className="max-w-7xl mx-auto px-4 py-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-gray-500 text-sm">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-gray-400 text-sm">
                     <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <Image
                             src="/FLOWS.png"
@@ -32,7 +32,7 @@ export function Footer({ variant = 'public', userEmail }: FooterProps) {
                     <div className="flex items-center gap-4">
                         {variant === 'public' ? (
                             <>
-                                <Link href="/admin" className="hover:text-gray-300 transition-colors flex items-center gap-1">
+                                <Link href="/admin" className="hover:text-gray-200 transition-colors flex items-center gap-1">
                                     {t('admin')} Portal <ExternalLink className="w-3 h-3" />
                                 </Link>
                                 <span>© 2026 {t('allRightsReserved')}</span>
@@ -40,7 +40,7 @@ export function Footer({ variant = 'public', userEmail }: FooterProps) {
                         ) : (
                             userEmail && (
                                 <span>
-                                    Logged in as: <span className="text-gray-300">{userEmail}</span>
+                                    Logged in as: <span className="text-gray-200">{userEmail}</span>
                                 </span>
                             )
                         )}

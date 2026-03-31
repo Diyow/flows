@@ -22,7 +22,7 @@ export function EmergencyContacts() {
     const { t } = useTranslation();
 
     return (
-        <div className="p-6 rounded-2xl bg-gray-800/50 border border-gray-700">
+        <div className="p-6 rounded-lg bg-gray-800 border border-gray-600">
             <div className="flex items-center gap-2 mb-4">
                 <Phone className="w-5 h-5 text-red-400" />
                 <h3 className="text-lg font-semibold text-white">{t('emergencyContacts')}</h3>
@@ -35,10 +35,10 @@ export function EmergencyContacts() {
                         <a
                             key={contact.nameKey}
                             href={`tel:${contact.number}`}
-                            className="flex flex-col items-center p-4 rounded-xl bg-gray-900/50 border border-gray-700 hover:border-gray-500 transition-all hover:scale-105"
+                            className="flex flex-col items-center p-4 rounded-lg bg-gray-900 border border-gray-700 hover:border-gray-500 transition-colors"
                         >
                             <Icon className={`w-8 h-8 mb-2 ${contact.color}`} />
-                            <span className="text-gray-400 text-xs uppercase tracking-wide">{t(contact.nameKey)}</span>
+                            <span className="text-gray-400 text-xs">{t(contact.nameKey)}</span>
                             <span className="text-white font-bold text-xl">{contact.number}</span>
                         </a>
                     );

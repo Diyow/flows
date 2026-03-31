@@ -21,41 +21,41 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-gray-900">
       {/* Header */}
       <Header variant="public" lastUpdate={mounted ? lastUpdate : undefined} />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-6 md:space-y-8">
+      <main className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-6">
         {/* Status Hero Section */}
-        <section className="animate-fade-in">
+        <section>
           <StatusIndicator status={status} currentLevel={currentLevel} currentFlow={currentFlow} />
         </section>
 
         {/* Quick Info Cards */}
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700 text-center">
-            <p className="text-gray-400 text-xs uppercase tracking-wide">{t('waterLevel')}</p>
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="p-4 rounded-lg bg-gray-800 border border-gray-600 text-center">
+            <p className="text-gray-400 text-xs">{t('waterLevel')}</p>
             <p className="text-2xl font-bold text-cyan-400">{currentLevel.toFixed(2)}m</p>
           </div>
-          <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700 text-center">
-            <p className="text-gray-400 text-xs uppercase tracking-wide">{t('flowRate')}</p>
+          <div className="p-4 rounded-lg bg-gray-800 border border-gray-600 text-center">
+            <p className="text-gray-400 text-xs">{t('flowRate')}</p>
             <p className="text-2xl font-bold text-cyan-400">{currentFlow.toFixed(1)} m³/s</p>
           </div>
-          <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700 text-center">
-            <p className="text-gray-400 text-xs uppercase tracking-wide">{t('levelWarning')}</p>
+          <div className="p-4 rounded-lg bg-gray-800 border border-gray-600 text-center">
+            <p className="text-gray-400 text-xs">{t('levelWarning')}</p>
             <p className="text-2xl font-bold text-amber-400">{settings.warningLevel}m</p>
           </div>
-          <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700 text-center">
-            <p className="text-gray-400 text-xs uppercase tracking-wide">{t('levelDanger')}</p>
+          <div className="p-4 rounded-lg bg-gray-800 border border-gray-600 text-center">
+            <p className="text-gray-400 text-xs">{t('levelDanger')}</p>
             <p className="text-2xl font-bold text-red-400">{settings.dangerLevel}m</p>
           </div>
-          <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700 text-center">
-            <p className="text-gray-400 text-xs uppercase tracking-wide">{t('flowWarning')}</p>
+          <div className="p-4 rounded-lg bg-gray-800 border border-gray-600 text-center">
+            <p className="text-gray-400 text-xs">{t('flowWarning')}</p>
             <p className="text-2xl font-bold text-amber-400">{settings.warningFlow} m³/s</p>
           </div>
-          <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700 text-center">
-            <p className="text-gray-400 text-xs uppercase tracking-wide">{t('status')}</p>
+          <div className="p-4 rounded-lg bg-gray-800 border border-gray-600 text-center">
+            <p className="text-gray-400 text-xs">{t('status')}</p>
             <p className={`text-2xl font-bold ${status === 'safe' ? 'text-emerald-400' :
               status === 'warning' ? 'text-amber-400' : 'text-red-400'
               }`}>
@@ -65,12 +65,12 @@ export default function Home() {
         </section>
 
         {/* Weather Forecast */}
-        <section className="animate-fade-in" style={{ animationDelay: '0.35s' }}>
+        <section>
           <WeatherForecast location={location} />
         </section>
 
         {/* Emergency Contacts */}
-        <section className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
+        <section>
           <EmergencyContacts />
         </section>
       </main>

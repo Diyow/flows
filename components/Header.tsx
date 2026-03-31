@@ -17,7 +17,7 @@ export function Header({ variant = 'public', lastUpdate, userEmail, onSignOut }:
     const { t } = useTranslation();
 
     return (
-        <header className="sticky top-0 z-50 glass border-b border-gray-800">
+        <header className="sticky top-0 z-50 bg-gray-800 border-b border-gray-600">
             <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                     <Image
@@ -25,7 +25,7 @@ export function Header({ variant = 'public', lastUpdate, userEmail, onSignOut }:
                         alt="FLOWS Logo"
                         width={40}
                         height={40}
-                        className="rounded-xl"
+                        className="rounded"
                     />
                     <div>
                         <h1 className="text-lg font-bold text-white">
@@ -45,12 +45,12 @@ export function Header({ variant = 'public', lastUpdate, userEmail, onSignOut }:
                         </div>
                     )}
 
-                    {variant === 'public' && <LanguageToggle />}
+                    {/* {variant === 'public' && <LanguageToggle />} */}
 
                     {variant === 'public' ? (
                         <Link
                             href="/admin"
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors"
                         >
                             <Shield className="w-4 h-4" />
                             <span className="hidden sm:inline">{t('admin')}</span>
@@ -59,7 +59,7 @@ export function Header({ variant = 'public', lastUpdate, userEmail, onSignOut }:
                         <div className="flex items-center gap-3">
                             <Link
                                 href="/"
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors"
                             >
                                 <Home className="w-4 h-4" />
                                 <span className="hidden sm:inline">Public View</span>
@@ -67,10 +67,10 @@ export function Header({ variant = 'public', lastUpdate, userEmail, onSignOut }:
                             {onSignOut && (
                                 <button
                                     onClick={onSignOut}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-900/50 hover:bg-red-900 text-red-400 text-sm transition-colors"
                                 >
                                     <LogOut className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Sign Out</span>
+                                    <span className="hidden sm:inline">Log Out</span>
                                 </button>
                             )}
                         </div>

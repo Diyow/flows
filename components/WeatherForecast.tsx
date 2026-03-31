@@ -30,7 +30,7 @@ export function WeatherForecast({ location }: WeatherForecastProps) {
 
     if (loading) {
         return (
-            <div className="p-6 rounded-2xl bg-gray-800/50 border border-gray-700 animate-pulse">
+            <div className="p-6 rounded-lg bg-gray-800 border border-gray-600">
                 <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
                 <div className="h-20 bg-gray-700 rounded mb-4"></div>
                 <div className="flex gap-2">
@@ -44,7 +44,7 @@ export function WeatherForecast({ location }: WeatherForecastProps) {
 
     if (error && !weather) {
         return (
-            <div className="p-6 rounded-2xl bg-gray-800/50 border border-gray-700">
+            <div className="p-6 rounded-lg bg-gray-800 border border-gray-600">
                 <div className="flex items-center gap-2 mb-4">
                     <Cloud className="w-5 h-5 text-gray-400" />
                     <h3 className="text-lg font-semibold text-white">{t('weather')}</h3>
@@ -63,7 +63,7 @@ export function WeatherForecast({ location }: WeatherForecastProps) {
     const CurrentIcon = getWeatherIcon(weather.current.icon);
 
     return (
-        <div className="p-6 rounded-2xl bg-gray-800/50 border border-gray-700">
+        <div className="p-6 rounded-lg bg-gray-800 border border-gray-600">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -81,16 +81,16 @@ export function WeatherForecast({ location }: WeatherForecastProps) {
 
             {/* High Rain Warning */}
             {isHighRainRisk && (
-                <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center gap-3">
+                <div className="mb-4 p-3 rounded-lg bg-amber-900/30 border border-amber-500 flex items-center gap-3">
                     <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
                     <p className="text-amber-400 text-sm">{t('highRainWarning')}</p>
                 </div>
             )}
 
             {/* Current Weather */}
-            <div className="flex items-center justify-between mb-6 p-4 rounded-xl bg-gray-900/50">
+            <div className="flex items-center justify-between mb-6 p-4 rounded-lg bg-gray-900 border border-gray-700">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-sky-500/20">
+                    <div className="p-3 rounded-lg bg-sky-900/50">
                         <CurrentIcon className="w-10 h-10 text-sky-400" />
                     </div>
                     <div>
@@ -127,9 +127,9 @@ export function WeatherForecast({ location }: WeatherForecastProps) {
                         return (
                             <div
                                 key={day.date}
-                                className={`p-3 rounded-xl text-center transition-colors ${isHighRain
-                                    ? 'bg-amber-500/10 border border-amber-500/30'
-                                    : 'bg-gray-900/50 hover:bg-gray-900/70'
+                                className={`p-3 rounded-lg text-center ${isHighRain
+                                    ? 'bg-amber-900/30 border border-amber-500'
+                                    : 'bg-gray-900 border border-gray-700'
                                     }`}
                             >
                                 <p className="text-xs text-gray-400 mb-1">
