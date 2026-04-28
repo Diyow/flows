@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useWaterData } from '@/hooks/useWaterData';
 import { useTranslation } from '@/context/LanguageContext';
-import { StatusIndicator } from '@/components/StatusIndicator';
 import { WaterLevelGauge } from '@/components/WaterLevelGauge';
 import { WaterLevelChart } from '@/components/WaterLevelChart';
 import { EmergencyContacts } from '@/components/EmergencyContacts';
@@ -12,6 +12,22 @@ import { SensorMap } from '@/components/SensorMap';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Droplets, Clock, Shield, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+
+// Dynamic import – Three.js/R3F needs the browser's WebGL context
+const HeroScene = dynamic(
+  () => import('@/components/HeroScene').then((mod) => mod.HeroScene),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[520px] md:h-[600px] rounded-2xl bg-gray-900/50 border border-gray-800/60 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-gray-500 text-sm">Loading 3D scene…</span>
+        </div>
+      </div>
+    ),
+  }
+);
 
 export default function Home() {
   const { currentLevel, currentFlow, history, settings, status, lastUpdate } = useWaterData();
@@ -56,9 +72,9 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-6 md:space-y-8">
-        {/* Status Hero Section */}
+        {/* 3D Hero Section */}
         <section className="animate-fade-in">
-          <StatusIndicator status={status} currentLevel={currentLevel} currentFlow={currentFlow} />
+          <HeroScene status={status} currentLevel={currentLevel} currentFlow={currentFlow} />
         </section>
 
         {/* Gauge and Chart Grid */}
@@ -130,7 +146,7 @@ export default function Home() {
         </section>
 
         {/* Safety Tips */}
-        <section className="p-6 rounded-xl bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/20 animate-fade-in" style={{ animationDelay: '0.5s' }}>
+        {/* <section className="p-6 rounded-xl bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/20 animate-fade-in" style={{ animationDelay: '0.5s' }}>
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <Shield className="w-5 h-5 text-blue-400" />
             {t('safetyGuidelines')}
@@ -165,7 +181,7 @@ export default function Home() {
               </li>
             </ul>
           </div>
-        </section>
+        </section> */}
       </main>
 
       {/* Footer */}

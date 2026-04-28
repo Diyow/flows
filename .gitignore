@@ -12,6 +12,12 @@
 
 # testing
 /coverage
+/public/models
+/public/textures
+/docs
+
+
+
 
 # next.js
 /.next/
