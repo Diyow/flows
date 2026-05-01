@@ -3,8 +3,8 @@ export type Language = 'en' | 'id';
 export const translations = {
     en: {
         // Header
-        appName: 'FloodWatch',
-        tagline: 'Real-Time Monitoring',
+        appName: 'FLOWS',
+        tagline: 'Flood Level Observation & Warning System',
         updated: 'Updated',
         admin: 'Admin',
         publicView: 'Public View',
@@ -117,13 +117,13 @@ export const translations = {
         // Footer
         allRightsReserved: 'All Rights Reserved',
         loggedInAs: 'Logged in as',
-        adminPanel: 'FloodWatch Admin Panel',
+        adminPanel: 'FLOWS Admin Panel',
     },
 
     id: {
         // Header
-        appName: 'FloodWatch',
-        tagline: 'Pemantauan Real-Time',
+        appName: 'FLOWS',
+        tagline: 'Sistem Observasi & Peringatan Tingkat Banjir',
         updated: 'Diperbarui',
         admin: 'Admin',
         publicView: 'Tampilan Publik',
@@ -236,7 +236,7 @@ export const translations = {
         // Footer
         allRightsReserved: 'Hak Cipta Dilindungi',
         loggedInAs: 'Masuk sebagai',
-        adminPanel: 'Panel Admin FloodWatch',
+        adminPanel: 'Panel Admin FLOWS',
     },
 } as const;
 

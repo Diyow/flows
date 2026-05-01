@@ -7,6 +7,7 @@ import { useWaterData } from '@/hooks/useWaterData';
 import { StatsCard } from '@/components/StatsCard';
 import { ThresholdControls } from '@/components/ThresholdControls';
 import { EventLogs } from '@/components/EventLogs';
+import { useTranslation } from '@/context/LanguageContext';
 import {
     Droplets,
     Gauge,
@@ -22,6 +23,7 @@ import Link from 'next/link';
 export default function AdminPage() {
     const { user, loading, signOut } = useAuth();
     const router = useRouter();
+    const { t } = useTranslation();
     const {
         currentLevel,
         currentFlow,
@@ -227,7 +229,7 @@ export default function AdminPage() {
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-gray-500 text-sm">
                         <div className="flex items-center gap-2">
                             <Droplets className="w-4 h-4 text-purple-400" />
-                            <span>FloodWatch Admin Panel</span>
+                            <span>{t('adminPanel')}</span>
                         </div>
                         <div>
                             Logged in as: <span className="text-gray-300">{user.email}</span>
