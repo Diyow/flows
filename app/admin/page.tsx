@@ -7,6 +7,7 @@ import { useWaterData } from '@/hooks/useWaterData';
 import { StatsCard } from '@/components/StatsCard';
 import { ThresholdControls } from '@/components/ThresholdControls';
 import { EventLogs } from '@/components/EventLogs';
+import { AdminManagement } from '@/components/AdminManagement';
 import { useTranslation } from '@/context/LanguageContext';
 import {
     Droplets,
@@ -215,6 +216,11 @@ export default function AdminPage() {
                             </div>
                         </div>
                     </div>
+                </section>
+
+                {/* Admin Management */}
+                <section>
+                    <AdminManagement />
                 </section>
 
                 {/* Event Logs */}
