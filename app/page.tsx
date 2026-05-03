@@ -29,7 +29,7 @@ const HeroScene = dynamic(
 );
 
 export default function Home() {
-  const { currentLevel, currentFlow, history, settings, status } = useWaterData();
+  const { currentLevel, currentFlow, history, settings, status, lastUpdate } = useWaterData();
   const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
 
@@ -39,7 +39,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
-      <Header />
+      <Header lastUpdate={lastUpdate} />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-6 md:space-y-8">

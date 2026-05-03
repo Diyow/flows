@@ -11,17 +11,15 @@ interface HeaderProps {
   variant?: 'default' | 'admin';
   userEmail?: string;
   onSignOut?: () => void;
+  lastUpdate?: Date;
 }
 
-export function Header({ variant = 'default', userEmail, onSignOut }: HeaderProps) {
+export function Header({ variant = 'default', userEmail, onSignOut, lastUpdate }: HeaderProps) {
   const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
-  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
     setMounted(true);
-    const interval = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -55,7 +53,7 @@ export function Header({ variant = 'default', userEmail, onSignOut }: HeaderProp
               <div className="hidden md:flex items-center gap-2 text-gray-400 text-sm">
                 <Clock className="w-4 h-4" />
                 <span>
-                  {t('updated')}: {mounted ? now.toLocaleTimeString() : '--:--:--'}
+                  {t('updated')}: {mounted && lastUpdate ? lastUpdate.toLocaleTimeString() : '--:--:--'}
                 </span>
               </div>
               <LanguageToggle />

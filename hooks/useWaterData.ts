@@ -10,6 +10,7 @@ import {
     query,
     orderBy,
     limit,
+    where,
     Timestamp,
     getDoc,
     setDoc,
@@ -36,6 +37,69 @@ export interface LogEntry {
     message: string;
     type: 'info' | 'alert';
     timestamp: Date;
+}
+
+/**
+ * Pick an adaptive bucket size based on the time span of the data.
+ * Keeps the chart at roughly 30-60 data points regardless of how much history exists.
+ *
+ *   < 30 min  →  1-minute buckets   (~30 points)
+ *   < 2 hours →  5-minute buckets   (~24 points)
+ *   < 6 hours →  15-minute buckets  (~24 points)
+ *   < 12 hours → 30-minute buckets  (~24 points)
+ *   ≥ 12 hours → 60-minute buckets  (~24 points)
+ */
+function getAdaptiveBucketMs(readings: WaterReading[]): number {
+    if (readings.length < 2) return 60_000;
+
+    const oldest = readings[0].timestamp.getTime();
+    const newest = readings[readings.length - 1].timestamp.getTime();
+    const spanMs = newest - oldest;
+    const spanMinutes = spanMs / 60_000;
+
+    if (spanMinutes < 30) return 60_000;        // 1 min
+    if (spanMinutes < 120) return 5 * 60_000;    // 5 min
+    if (spanMinutes < 360) return 15 * 60_000;   // 15 min
+    if (spanMinutes < 720) return 30 * 60_000;   // 30 min
+    return 60 * 60_000;                           // 1 hour
+}
+
+/**
+ * Downsample readings by grouping them into time buckets and averaging values.
+ * Bucket size is chosen adaptively based on the data's time span.
+ */
+function downsampleReadings(readings: WaterReading[]): WaterReading[] {
+    if (readings.length === 0) return [];
+
+    const bucketMs = getAdaptiveBucketMs(readings);
+    const buckets = new Map<number, WaterReading[]>();
+
+    for (const reading of readings) {
+        const bucketKey = Math.floor(reading.timestamp.getTime() / bucketMs) * bucketMs;
+        if (!buckets.has(bucketKey)) {
+            buckets.set(bucketKey, []);
+        }
+        buckets.get(bucketKey)!.push(reading);
+    }
+
+    const downsampled: WaterReading[] = [];
+    const sortedKeys = Array.from(buckets.keys()).sort((a, b) => a - b);
+
+    for (const key of sortedKeys) {
+        const bucket = buckets.get(key)!;
+        const avgLevel = bucket.reduce((sum, r) => sum + r.level, 0) / bucket.length;
+        const avgFlow = bucket.reduce((sum, r) => sum + r.flow, 0) / bucket.length;
+        // Use the middle timestamp of the bucket for display
+        const midTimestamp = bucket[Math.floor(bucket.length / 2)].timestamp;
+
+        downsampled.push({
+            level: Math.round(avgLevel * 100) / 100,
+            flow: Math.round(avgFlow * 100) / 100,
+            timestamp: midTimestamp,
+        });
+    }
+
+    return downsampled;
 }
 
 export function useWaterData() {
@@ -69,10 +133,14 @@ export function useWaterData() {
     useEffect(() => {
         if (!useFirebase || !firebaseDb) return;
 
+        // Fetch readings from the last 24 hours
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
         const readingsQuery = query(
             collection(firebaseDb, 'readings'),
+            where('timestamp', '>=', Timestamp.fromDate(twentyFourHoursAgo)),
             orderBy('timestamp', 'desc'),
-            limit(25)
+            limit(2000)
         );
 
         const unsubscribe = onSnapshot(readingsQuery, (snapshot) => {
@@ -89,9 +157,8 @@ export function useWaterData() {
 
             // Readings come in desc order from query, reverse for chronological history
             const chronological = readings.reverse();
-            setHistory(chronological);
 
-            // Set current values from the most recent reading
+            // Set current values from the raw latest reading (unsmoothed)
             if (chronological.length > 0) {
                 const latest = chronological[chronological.length - 1];
                 setCurrentLevel(latest.level);
@@ -99,6 +166,10 @@ export function useWaterData() {
                 setLastUpdate(latest.timestamp);
                 setIsOnline(true);
             }
+
+            // Downsample with adaptive bucket size based on data time span
+            const downsampled = downsampleReadings(chronological);
+            setHistory(downsampled);
         }, (error) => {
             console.error('Error subscribing to readings:', error);
             setIsOnline(false);

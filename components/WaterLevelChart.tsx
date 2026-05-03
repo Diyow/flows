@@ -31,6 +31,13 @@ export function WaterLevelChart({
         flow: reading.flow || 0,
     }));
 
+    // Auto-scale flow Y-axis based on actual data values only
+    const flowValues = chartData.map(d => d.flow).filter(v => v > 0);
+    const maxFlow = flowValues.length > 0 ? Math.max(...flowValues) : 10;
+    const minFlow = flowValues.length > 0 ? Math.min(...flowValues) : 0;
+    const flowPadding = Math.max((maxFlow - minFlow) * 0.3, maxFlow * 0.2, 1);
+    const flowDomain: [number, number] = [0, Math.ceil(maxFlow + flowPadding)];
+
     const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string; color: string }>; label?: string }) => {
         if (active && payload && payload.length) {
             return (
@@ -85,7 +92,7 @@ export function WaterLevelChart({
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
-                                domain={[0, 400]}
+                                domain={flowDomain}
                                 tickFormatter={(value) => `${value}`}
                             />
                         )}
@@ -116,6 +123,7 @@ export function WaterLevelChart({
                             strokeWidth={2}
                             dot={false}
                             activeDot={{ r: 4 }}
+                            isAnimationActive={false}
                         />
 
                         {/* Water Flow Line */}
@@ -129,6 +137,7 @@ export function WaterLevelChart({
                                 strokeWidth={2}
                                 dot={false}
                                 activeDot={{ r: 4 }}
+                                isAnimationActive={false}
                             />
                         )}
                     </LineChart>
