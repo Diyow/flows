@@ -8,9 +8,10 @@ interface ThresholdControlsProps {
     settings: ThresholdSettings;
     onUpdate: (settings: ThresholdSettings) => Promise<void>;
     onLogEvent?: (message: string, type: 'info' | 'alert') => Promise<void>;
+    adminEmail?: string;
 }
 
-export function ThresholdControls({ settings, onUpdate, onLogEvent }: ThresholdControlsProps) {
+export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }: ThresholdControlsProps) {
     const [warningLevel, setWarningLevel] = useState(settings.warningLevel);
     const [dangerLevel, setDangerLevel] = useState(settings.dangerLevel);
     const [warningFlow, setWarningFlow] = useState(settings.warningFlow);
@@ -33,7 +34,7 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent }: ThresholdC
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
             await onLogEvent?.(
-                `Thresholds updated — Level: ${warningLevel.toFixed(1)}m/${dangerLevel.toFixed(1)}m, Flow: ${warningFlow}/${dangerFlow} m³/s`,
+                `${adminEmail ?? 'Admin'} updated thresholds — Level: ${warningLevel.toFixed(1)}m/${dangerLevel.toFixed(1)}m, Flow: ${warningFlow}/${dangerFlow} m³/s`,
                 'info'
             );
         } catch (error) {

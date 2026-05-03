@@ -136,6 +136,7 @@ export default function AdminPage() {
                         settings={settings}
                         onUpdate={updateThresholds}
                         onLogEvent={addLogEntry}
+                        adminEmail={user.email ?? undefined}
                     />
 
                     {/* Manual Controls */}

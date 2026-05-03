@@ -50,12 +50,13 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
         clearError();
 
         try {
+            const invited = inviteEmail;
             await inviteAdmin(inviteEmail, invitePassword);
-            setInviteSuccess(`Successfully invited ${inviteEmail}`);
+            setInviteSuccess(`Successfully invited ${invited}`);
             setInviteEmail('');
             setInvitePassword('');
             setShowInviteForm(false);
-            await onLogEvent?.(`Admin invited: ${inviteEmail}`, 'info');
+            await onLogEvent?.(`${user?.email} invited new admin: ${invited}`, 'info');
 
             // Clear success message after 4 seconds
             setTimeout(() => setInviteSuccess(''), 4000);
@@ -72,7 +73,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
         try {
             await removeAdmin(adminId);
             setConfirmDelete(null);
-            await onLogEvent?.(`Admin removed: ${adminToRemove?.email ?? adminId}`, 'alert');
+            await onLogEvent?.(`${user?.email} removed admin: ${adminToRemove?.email ?? adminId}`, 'alert');
         } catch {
             // Error is handled by the hook
         } finally {
@@ -86,7 +87,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
         try {
             await toggleAdminDisabled(adminId, !currentlyDisabled);
             const action = currentlyDisabled ? 'enabled' : 'disabled';
-            await onLogEvent?.(`Admin ${action}: ${targetAdmin?.email ?? adminId}`, 'info');
+            await onLogEvent?.(`${user?.email} ${action} admin: ${targetAdmin?.email ?? adminId}`, 'info');
         } catch {
             // Error is handled by the hook
         } finally {
