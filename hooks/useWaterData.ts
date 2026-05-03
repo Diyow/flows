@@ -38,36 +38,9 @@ export interface LogEntry {
     timestamp: Date;
 }
 
-// Generate mock water level between min and max
-function generateMockLevel(min = 1.0, max = 2.5): number {
-    return Math.round((Math.random() * (max - min) + min) * 100) / 100;
-}
-
-// Generate mock water flow between min and max (m³/s)
-function generateMockFlow(min = 50, max = 150): number {
-    return Math.round((Math.random() * (max - min) + min) * 10) / 10;
-}
-
-// Generate 24 hours of mock historical data
-function generateMockHistory(): WaterReading[] {
-    const history: WaterReading[] = [];
-    const now = new Date();
-
-    for (let i = 24; i >= 0; i--) {
-        const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
-        history.push({
-            level: generateMockLevel(1.0, 2.5),
-            flow: generateMockFlow(50, 150),
-            timestamp,
-        });
-    }
-
-    return history;
-}
-
 export function useWaterData() {
-    const [currentLevel, setCurrentLevel] = useState<number>(1.5);
-    const [currentFlow, setCurrentFlow] = useState<number>(100);
+    const [currentLevel, setCurrentLevel] = useState<number>(0);
+    const [currentFlow, setCurrentFlow] = useState<number>(0);
     const [history, setHistory] = useState<WaterReading[]>([]);
     const [settings, setSettings] = useState<ThresholdSettings>({
         warningLevel: 2.0,
@@ -92,39 +65,46 @@ export function useWaterData() {
         }
     }, []);
 
-    // Initialize mock history
+    // Subscribe to Firestore readings in real-time
     useEffect(() => {
-        setHistory(generateMockHistory());
-    }, []);
+        if (!useFirebase || !firebaseDb) return;
 
-    // Mock data generation every 5 seconds
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const newLevel = generateMockLevel(1.0, 2.5);
-            const newFlow = generateMockFlow(50, 150);
-            const now = new Date();
+        const readingsQuery = query(
+            collection(firebaseDb, 'readings'),
+            orderBy('timestamp', 'desc'),
+            limit(25)
+        );
 
-            setCurrentLevel(newLevel);
-            setCurrentFlow(newFlow);
-            setLastUpdate(now);
-
-            // Add to history (keep last 24 readings)
-            setHistory(prev => {
-                const newHistory = [...prev, { level: newLevel, flow: newFlow, timestamp: now }];
-                return newHistory.slice(-25);
+        const unsubscribe = onSnapshot(readingsQuery, (snapshot) => {
+            const readings: WaterReading[] = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                readings.push({
+                    id: doc.id,
+                    level: data.level ?? 0,
+                    flow: data.flow ?? 0,
+                    timestamp: data.timestamp?.toDate?.() || new Date(),
+                });
             });
 
-            // If using Firebase, also write to Firestore
-            if (useFirebase && firebaseDb) {
-                addDoc(collection(firebaseDb, 'readings'), {
-                    level: newLevel,
-                    flow: newFlow,
-                    timestamp: Timestamp.fromDate(now),
-                }).catch(console.error);
-            }
-        }, 5000);
+            // Readings come in desc order from query, reverse for chronological history
+            const chronological = readings.reverse();
+            setHistory(chronological);
 
-        return () => clearInterval(interval);
+            // Set current values from the most recent reading
+            if (chronological.length > 0) {
+                const latest = chronological[chronological.length - 1];
+                setCurrentLevel(latest.level);
+                setCurrentFlow(latest.flow);
+                setLastUpdate(latest.timestamp);
+                setIsOnline(true);
+            }
+        }, (error) => {
+            console.error('Error subscribing to readings:', error);
+            setIsOnline(false);
+        });
+
+        return () => unsubscribe();
     }, [useFirebase, firebaseDb]);
 
     // Subscribe to Firebase settings if configured

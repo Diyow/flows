@@ -19,7 +19,11 @@ import {
     Crown
 } from 'lucide-react';
 
-export function AdminManagement() {
+interface AdminManagementProps {
+    onLogEvent?: (message: string, type: 'info' | 'alert') => Promise<void>;
+}
+
+export function AdminManagement({ onLogEvent }: AdminManagementProps) {
     const { user, isSuperAdmin } = useAuth();
     const {
         admins,
@@ -51,6 +55,7 @@ export function AdminManagement() {
             setInviteEmail('');
             setInvitePassword('');
             setShowInviteForm(false);
+            await onLogEvent?.(`Admin invited: ${inviteEmail}`, 'info');
 
             // Clear success message after 4 seconds
             setTimeout(() => setInviteSuccess(''), 4000);
@@ -62,10 +67,12 @@ export function AdminManagement() {
     };
 
     const handleRemove = async (adminId: string) => {
+        const adminToRemove = admins.find(a => a.id === adminId);
         setActionLoading(adminId);
         try {
             await removeAdmin(adminId);
             setConfirmDelete(null);
+            await onLogEvent?.(`Admin removed: ${adminToRemove?.email ?? adminId}`, 'alert');
         } catch {
             // Error is handled by the hook
         } finally {
@@ -74,9 +81,12 @@ export function AdminManagement() {
     };
 
     const handleToggleDisabled = async (adminId: string, currentlyDisabled: boolean) => {
+        const targetAdmin = admins.find(a => a.id === adminId);
         setActionLoading(adminId);
         try {
             await toggleAdminDisabled(adminId, !currentlyDisabled);
+            const action = currentlyDisabled ? 'enabled' : 'disabled';
+            await onLogEvent?.(`Admin ${action}: ${targetAdmin?.email ?? adminId}`, 'info');
         } catch {
             // Error is handled by the hook
         } finally {
