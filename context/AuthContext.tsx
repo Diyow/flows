@@ -11,11 +11,7 @@ import {
 import {
     doc,
     getDoc,
-    getDocs,
     updateDoc,
-    collection,
-    query,
-    where,
     Timestamp,
     Firestore
 } from 'firebase/firestore';
@@ -73,21 +69,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(authUser);
 
             if (authUser && dbInstance) {
-                // Fetch admin role from Firestore by email
+                // Fetch admin role by document ID (user UID) — single read instead of collection query
                 try {
-                    const adminsQuery = query(
-                        collection(dbInstance, 'admins'),
-                        where('email', '==', authUser.email)
-                    );
-                    const querySnapshot = await getDocs(adminsQuery);
+                    const adminDocRef = doc(dbInstance, 'admins', authUser.uid);
+                    const adminDocSnap = await getDoc(adminDocRef);
 
-                    if (!querySnapshot.empty) {
-                        const adminDoc = querySnapshot.docs[0];
-                        const data = adminDoc.data();
+                    if (adminDocSnap.exists()) {
+                        const data = adminDocSnap.data();
                         setAdminRole(data.role || 'admin');
 
                         // Update lastAccess timestamp
-                        updateDoc(doc(dbInstance, 'admins', adminDoc.id), {
+                        updateDoc(adminDocRef, {
                             lastAccess: Timestamp.now(),
                         }).catch(console.error);
                     } else {

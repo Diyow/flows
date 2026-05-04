@@ -12,7 +12,6 @@ import {
     limit,
     where,
     Timestamp,
-    getDoc,
     setDoc,
     Firestore
 } from 'firebase/firestore';
@@ -106,11 +105,20 @@ export function useWaterData() {
     const [currentLevel, setCurrentLevel] = useState<number>(0);
     const [currentFlow, setCurrentFlow] = useState<number>(0);
     const [history, setHistory] = useState<WaterReading[]>([]);
-    const [settings, setSettings] = useState<ThresholdSettings>({
-        warningLevel: 2.0,
-        dangerLevel: 3.5,
-        warningFlow: 200,
-        dangerFlow: 350,
+    const [settings, setSettings] = useState<ThresholdSettings>(() => {
+        // Load cached settings from localStorage for instant display (0 Firestore reads)
+        if (typeof window !== 'undefined') {
+            try {
+                const cached = localStorage.getItem('flows-settings-cache');
+                if (cached) return JSON.parse(cached);
+            } catch { /* ignore */ }
+        }
+        return {
+            warningLevel: 2.0,
+            dangerLevel: 3.5,
+            warningFlow: 200,
+            dangerFlow: 350,
+        };
     });
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -140,7 +148,7 @@ export function useWaterData() {
             collection(firebaseDb, 'readings'),
             where('timestamp', '>=', Timestamp.fromDate(twentyFourHoursAgo)),
             orderBy('timestamp', 'desc'),
-            limit(2000)
+            limit(100)
         );
 
         const unsubscribe = onSnapshot(readingsQuery, (snapshot) => {
@@ -179,32 +187,26 @@ export function useWaterData() {
     }, [useFirebase, firebaseDb]);
 
     // Subscribe to Firebase settings if configured
+    // No getDoc call — we rely on onSnapshot + localStorage cache to avoid extra reads
     useEffect(() => {
         if (!useFirebase || !firebaseDb) return;
 
         const settingsRef = doc(firebaseDb, 'settings', 'thresholds');
 
-        // Initialize settings if they don't exist
-        getDoc(settingsRef).then((docSnap) => {
-            if (!docSnap.exists()) {
-                setDoc(settingsRef, {
-                    warningLevel: 2.0,
-                    dangerLevel: 3.5,
-                    warningFlow: 200,
-                    dangerFlow: 350,
-                });
-            }
-        });
-
-        const unsubscribe = onSnapshot(settingsRef, (doc) => {
-            if (doc.exists()) {
-                const data = doc.data();
-                setSettings({
+        const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const newSettings: ThresholdSettings = {
                     warningLevel: data.warningLevel || 2.0,
                     dangerLevel: data.dangerLevel || 3.5,
                     warningFlow: data.warningFlow || 200,
                     dangerFlow: data.dangerFlow || 350,
-                });
+                };
+                setSettings(newSettings);
+                // Cache to localStorage for future instant loads
+                try {
+                    localStorage.setItem('flows-settings-cache', JSON.stringify(newSettings));
+                } catch { /* ignore */ }
             }
         });
 

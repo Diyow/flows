@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useWaterData } from '@/hooks/useWaterData';
+import { useWaterDataContext } from '@/context/WaterDataContext';
 import { StatsCard } from '@/components/StatsCard';
 import { ThresholdControls } from '@/components/ThresholdControls';
 import { EventLogs } from '@/components/EventLogs';
@@ -36,7 +36,7 @@ export default function AdminPage() {
         updateThresholds,
         addLogEntry,
         firebaseDb
-    } = useWaterData();
+    } = useWaterDataContext();
 
     // Redirect to login if not authenticated
     useEffect(() => {

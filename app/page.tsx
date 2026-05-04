@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { useWaterData } from '@/hooks/useWaterData';
+import { useWaterDataContext } from '@/context/WaterDataContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { WaterLevelGauge } from '@/components/WaterLevelGauge';
 import { WaterLevelChart } from '@/components/WaterLevelChart';
@@ -29,7 +29,7 @@ const HeroScene = dynamic(
 );
 
 export default function Home() {
-  const { currentLevel, currentFlow, history, settings, status, lastUpdate } = useWaterData();
+  const { currentLevel, currentFlow, history, settings, status, lastUpdate } = useWaterDataContext();
   const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
 
