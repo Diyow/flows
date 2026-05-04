@@ -15,7 +15,7 @@ export function EventLogs({ logs }: EventLogsProps) {
                 <h3 className="text-lg font-semibold text-white">Event Logs</h3>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-y-auto max-h-[400px]">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-gray-700">

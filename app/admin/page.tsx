@@ -8,6 +8,7 @@ import { StatsCard } from '@/components/StatsCard';
 import { ThresholdControls } from '@/components/ThresholdControls';
 import { EventLogs } from '@/components/EventLogs';
 import { AdminManagement } from '@/components/AdminManagement';
+import { HistoricalData } from '@/components/HistoricalData';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { useTranslation } from '@/context/LanguageContext';
@@ -33,7 +34,8 @@ export default function AdminPage() {
         isOnline,
         status,
         updateThresholds,
-        addLogEntry
+        addLogEntry,
+        firebaseDb
     } = useWaterData();
 
     // Redirect to login if not authenticated
@@ -91,7 +93,7 @@ export default function AdminPage() {
                         value={`${currentFlow.toFixed(1)} m³/s`}
                         subtitle="Current flow"
                         icon={Droplets}
-                        color="purple"
+                        color="blue"
                     />
                     <StatsCard
                         title="Device Status"
@@ -192,6 +194,11 @@ export default function AdminPage() {
                 {/* Admin Management */}
                 <section>
                     <AdminManagement onLogEvent={addLogEntry} />
+                </section>
+
+                {/* Historical Data & Export */}
+                <section>
+                    <HistoricalData firebaseDb={firebaseDb} settings={settings} />
                 </section>
 
                 {/* Event Logs */}

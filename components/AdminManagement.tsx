@@ -268,13 +268,12 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                     return (
                         <div
                             key={admin.id}
-                            className={`p-4 rounded-lg border transition-all duration-200 ${
-                                admin.disabled
-                                    ? 'bg-gray-900/30 border-gray-800 opacity-60'
-                                    : isCurrentUser
+                            className={`p-4 rounded-lg border transition-all duration-200 ${admin.disabled
+                                ? 'bg-gray-900/30 border-gray-800 opacity-60'
+                                : isCurrentUser
                                     ? 'bg-cyan-500/5 border-cyan-500/20'
                                     : 'bg-gray-900/50 border-gray-700 hover:border-gray-600'
-                            }`}
+                                }`}
                         >
                             {/* Delete Confirmation */}
                             {isBeingDeleted ? (
@@ -311,11 +310,10 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                 <div className="flex items-center justify-between flex-wrap gap-3">
                                     {/* Admin Info */}
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                            admin.role === 'super_admin'
-                                                ? 'bg-amber-500/20'
-                                                : 'bg-cyan-500/20'
-                                        }`}>
+                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${admin.role === 'super_admin'
+                                            ? 'bg-amber-500/20'
+                                            : 'bg-cyan-500/20'
+                                            }`}>
                                             {admin.role === 'super_admin' ? (
                                                 <ShieldCheck className="w-4 h-4 text-amber-400" />
                                             ) : (
@@ -359,11 +357,10 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                                     onClick={() => handleToggleDisabled(admin.id, admin.disabled)}
                                                     disabled={actionLoading === admin.id}
                                                     title={admin.disabled ? 'Enable admin' : 'Disable admin'}
-                                                    className={`p-2 rounded-lg border transition-colors disabled:opacity-50 ${
-                                                        admin.disabled
-                                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
-                                                            : 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
-                                                    }`}
+                                                    className={`p-2 rounded-lg border transition-colors disabled:opacity-50 ${admin.disabled
+                                                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+                                                        : 'bg-gray-500/10 border-gray-500/30 text-gray-400 hover:bg-gray-500/20'
+                                                        }`}
                                                 >
                                                     {actionLoading === admin.id ? (
                                                         <Loader2 className="w-4 h-4 animate-spin" />

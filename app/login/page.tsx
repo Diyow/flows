@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Droplets, Mail, Lock, AlertCircle, ArrowLeft, Info } from 'lucide-react';
+import { Mail, Lock, AlertCircle, ArrowLeft, Info } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -46,9 +47,7 @@ export default function LoginPage() {
                 <div className="p-8 rounded-2xl bg-gray-800/50 border border-gray-700">
                     {/* Header */}
                     <div className="text-center mb-8">
-                        <div className="inline-flex p-4 rounded-2xl bg-cyan-500/20 mb-4">
-                            <Droplets className="w-10 h-10 text-cyan-400" />
-                        </div>
+                        <Image src="/FLOWS.png" alt="FLOWS Logo" width={120} height={120} className="w-28 h-28 object-contain mx-auto mb-4" />
                         <h1 className="text-2xl font-bold text-white">Admin Login</h1>
                         <p className="text-gray-400 mt-2">Access the monitoring dashboard</p>
                     </div>

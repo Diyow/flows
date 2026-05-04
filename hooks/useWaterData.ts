@@ -297,5 +297,6 @@ export function useWaterData() {
         status: getStatus(),
         updateThresholds,
         addLogEntry,
+        firebaseDb,
     };
 }
