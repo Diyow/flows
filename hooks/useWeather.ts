@@ -34,10 +34,16 @@ const LOCATION = {
     name: 'Denpasar, Sidakarya'
 };
 
-export function useWeather() {
+export function useWeather(locale: string = 'en') {
     const [weather, setWeather] = useState<WeatherData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Map language codes to OpenWeatherMap locale and JS locale
+    const owmLang = locale === 'id' ? 'id' : 'en';
+    const jsLocale = locale === 'id' ? 'id-ID' : 'en-US';
+
+    const cacheKey = `${CACHE_KEY}-${owmLang}`;
 
     const fetchWeather = useCallback(async (forceRefresh = false) => {
         const apiKey = process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY;
@@ -51,7 +57,7 @@ export function useWeather() {
         // Check cache first (unless forcing refresh)
         if (!forceRefresh) {
             try {
-                const cached = localStorage.getItem(CACHE_KEY);
+                const cached = localStorage.getItem(cacheKey);
                 if (cached) {
                     const parsedCache: WeatherData = JSON.parse(cached);
                     const now = Date.now();
@@ -73,7 +79,7 @@ export function useWeather() {
 
             // Fetch current weather
             const currentRes = await fetch(
-                `https://api.openweathermap.org/data/2.5/weather?lat=${LOCATION.lat}&lon=${LOCATION.lon}&appid=${apiKey}&units=metric`
+                `https://api.openweathermap.org/data/2.5/weather?lat=${LOCATION.lat}&lon=${LOCATION.lon}&appid=${apiKey}&units=metric&lang=${owmLang}`
             );
 
             if (!currentRes.ok) {
@@ -84,7 +90,7 @@ export function useWeather() {
 
             // Fetch 5-day forecast
             const forecastRes = await fetch(
-                `https://api.openweathermap.org/data/2.5/forecast?lat=${LOCATION.lat}&lon=${LOCATION.lon}&appid=${apiKey}&units=metric`
+                `https://api.openweathermap.org/data/2.5/forecast?lat=${LOCATION.lat}&lon=${LOCATION.lon}&appid=${apiKey}&units=metric&lang=${owmLang}`
             );
 
             if (!forecastRes.ok) {
@@ -105,7 +111,7 @@ export function useWeather() {
                     processedDays.add(dateKey);
                     dailyForecasts.push({
                         date: dateKey,
-                        dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                        dayName: date.toLocaleDateString(jsLocale, { weekday: 'short' }),
                         temp: Math.round(item.main.temp),
                         description: item.weather[0].description,
                         icon: item.weather[0].icon,
@@ -131,7 +137,7 @@ export function useWeather() {
 
             // Cache the result
             try {
-                localStorage.setItem(CACHE_KEY, JSON.stringify(weatherData));
+                localStorage.setItem(cacheKey, JSON.stringify(weatherData));
             } catch (e) {
                 console.error('Cache write error:', e);
             }
@@ -144,7 +150,7 @@ export function useWeather() {
 
             // Try to use stale cache as fallback
             try {
-                const cached = localStorage.getItem(CACHE_KEY);
+                const cached = localStorage.getItem(cacheKey);
                 if (cached) {
                     setWeather(JSON.parse(cached));
                 }
@@ -154,7 +160,7 @@ export function useWeather() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [owmLang, jsLocale]);
 
     // Fetch weather on mount
     useEffect(() => {

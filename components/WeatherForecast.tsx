@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Cloud, CloudRain, Sun, Thermometer, Droplets, Wind, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useWeather } from '@/hooks/useWeather';
 import { useTranslation } from '@/context/LanguageContext';
@@ -12,23 +13,70 @@ function getWeatherIcon(iconCode: string) {
     return Cloud;
 }
 
-export function WeatherForecast() {
-    const { weather, loading, error, refresh, isHighRainRisk } = useWeather();
-    const { t } = useTranslation();
+// Delay before showing skeleton (ms) — prevents flicker on fast cache loads
+const SKELETON_DELAY = 300;
 
-    if (loading) {
+export function WeatherForecast() {
+    const { t, language } = useTranslation();
+    const { weather, loading, error, refresh, isHighRainRisk } = useWeather(language);
+    const [showSkeleton, setShowSkeleton] = useState(false);
+
+    // Only show skeleton if loading takes longer than SKELETON_DELAY
+    useEffect(() => {
+        if (!loading) {
+            setShowSkeleton(false);
+            return;
+        }
+
+        const timer = setTimeout(() => setShowSkeleton(true), SKELETON_DELAY);
+        return () => clearTimeout(timer);
+    }, [loading]);
+
+    if (loading && showSkeleton) {
         return (
             <div className="p-6 rounded-2xl bg-gray-800/50 border border-gray-700 animate-pulse">
-                <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
-                <div className="h-20 bg-gray-700 rounded mb-4"></div>
-                <div className="flex gap-2">
+                {/* Header skeleton */}
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 bg-gray-700 rounded" />
+                        <div className="h-5 bg-gray-700 rounded w-36" />
+                    </div>
+                    <div className="w-8 h-8 bg-gray-700 rounded-lg" />
+                </div>
+                {/* Current weather skeleton */}
+                <div className="flex items-center justify-between mb-6 p-4 rounded-xl bg-gray-900/50">
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-gray-700 rounded-xl" />
+                        <div className="space-y-2">
+                            <div className="h-3 bg-gray-700 rounded w-28" />
+                            <div className="h-8 bg-gray-700 rounded w-20" />
+                            <div className="h-3 bg-gray-700 rounded w-24" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <div className="h-3 bg-gray-700 rounded w-16" />
+                        <div className="h-3 bg-gray-700 rounded w-20" />
+                        <div className="h-3 bg-gray-700 rounded w-28" />
+                    </div>
+                </div>
+                {/* Forecast skeleton */}
+                <div className="h-3 bg-gray-700 rounded w-20 mb-3" />
+                <div className="grid grid-cols-5 gap-2">
                     {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="flex-1 h-24 bg-gray-700 rounded"></div>
+                        <div key={i} className="p-3 rounded-xl bg-gray-900/50 flex flex-col items-center gap-1.5">
+                            <div className="h-3 bg-gray-700 rounded w-10" />
+                            <div className="w-6 h-6 bg-gray-700 rounded" />
+                            <div className="h-4 bg-gray-700 rounded w-8" />
+                            <div className="h-3 bg-gray-700 rounded w-6" />
+                        </div>
                     ))}
                 </div>
             </div>
         );
     }
+
+    // While loading but before skeleton delay, render nothing (prevents flicker)
+    if (loading) return null;
 
     if (error && !weather) {
         return (
@@ -116,8 +164,8 @@ export function WeatherForecast() {
                             <div
                                 key={day.date}
                                 className={`p-3 rounded-xl text-center transition-colors ${isHighRain
-                                        ? 'bg-amber-500/10 border border-amber-500/30'
-                                        : 'bg-gray-900/50 hover:bg-gray-900/70'
+                                    ? 'bg-amber-500/10 border border-amber-500/30'
+                                    : 'bg-gray-900/50 hover:bg-gray-900/70'
                                     }`}
                             >
                                 <p className="text-xs text-gray-400 mb-1">

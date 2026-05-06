@@ -105,26 +105,25 @@ export function useWaterData() {
     const [currentLevel, setCurrentLevel] = useState<number>(0);
     const [currentFlow, setCurrentFlow] = useState<number>(0);
     const [history, setHistory] = useState<WaterReading[]>([]);
-    const [settings, setSettings] = useState<ThresholdSettings>(() => {
-        // Load cached settings from localStorage for instant display (0 Firestore reads)
-        if (typeof window !== 'undefined') {
-            try {
-                const cached = localStorage.getItem('flows-settings-cache');
-                if (cached) return JSON.parse(cached);
-            } catch { /* ignore */ }
-        }
-        return {
-            warningLevel: 2.0,
-            dangerLevel: 3.5,
-            warningFlow: 200,
-            dangerFlow: 350,
-        };
+    const [settings, setSettings] = useState<ThresholdSettings>({
+        warningLevel: 2.0,
+        dangerLevel: 3.5,
+        warningFlow: 200,
+        dangerFlow: 350,
     });
     const [logs, setLogs] = useState<LogEntry[]>([]);
-    const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+    const [lastUpdate, setLastUpdate] = useState<Date>(new Date(0));
     const [isOnline, setIsOnline] = useState<boolean>(true);
     const [useFirebase, setUseFirebase] = useState<boolean>(false);
     const [firebaseDb, setFirebaseDb] = useState<Firestore | null>(null);
+
+    // Load cached settings from localStorage after mount (avoids hydration mismatch)
+    useEffect(() => {
+        try {
+            const cached = localStorage.getItem('flows-settings-cache');
+            if (cached) setSettings(JSON.parse(cached));
+        } catch { /* ignore */ }
+    }, []);
 
     // Check if Firebase is configured
     useEffect(() => {
@@ -171,7 +170,6 @@ export function useWaterData() {
                 const latest = chronological[chronological.length - 1];
                 setCurrentLevel(latest.level);
                 setCurrentFlow(latest.flow);
-                setLastUpdate(latest.timestamp);
                 setIsOnline(true);
             }
 
@@ -181,6 +179,27 @@ export function useWaterData() {
         }, (error) => {
             console.error('Error subscribing to readings:', error);
             setIsOnline(false);
+        });
+
+        return () => unsubscribe();
+    }, [useFirebase, firebaseDb]);
+
+    // Subscribe to the latest reading (no time filter) just for lastUpdate display
+    useEffect(() => {
+        if (!useFirebase || !firebaseDb) return;
+
+        const latestQuery = query(
+            collection(firebaseDb, 'readings'),
+            orderBy('timestamp', 'desc'),
+            limit(1)
+        );
+
+        const unsubscribe = onSnapshot(latestQuery, (snapshot) => {
+            if (!snapshot.empty) {
+                const data = snapshot.docs[0].data();
+                const ts = data.timestamp?.toDate?.() || new Date();
+                setLastUpdate(ts);
+            }
         });
 
         return () => unsubscribe();

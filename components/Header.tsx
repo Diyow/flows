@@ -23,7 +23,7 @@ export function Header({ variant = 'default', userEmail, onSignOut, lastUpdate }
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 glass border-b border-gray-800">
+    <header className="sticky top-0 z-50 bg-[#0d0d14]/95 backdrop-blur-md border-b border-gray-700/50 shadow-lg shadow-black/20">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Left side — always the same branding */}
         <Link href={variant === 'admin' ? '/admin' : '/'} className="flex items-center gap-3 group">
@@ -31,7 +31,8 @@ export function Header({ variant = 'default', userEmail, onSignOut, lastUpdate }
             <Image
               src="/FLOWS.png"
               alt="FLOWS Logo"
-              fill
+              width={40}
+              height={40}
               className="object-contain"
               priority
             />
@@ -53,7 +54,7 @@ export function Header({ variant = 'default', userEmail, onSignOut, lastUpdate }
               <div className="hidden md:flex items-center gap-2 text-gray-400 text-sm">
                 <Clock className="w-4 h-4" />
                 <span>
-                  {t('updated')}: {mounted && lastUpdate ? lastUpdate.toLocaleTimeString() : '--:--:--'}
+                  {t('updated')}: {mounted && lastUpdate ? lastUpdate.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
                 </span>
               </div>
               <LanguageToggle />

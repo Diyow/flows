@@ -175,7 +175,7 @@ export const translations = {
         police: 'Polisi',
         ambulance: 'Ambulans',
         fireDept: 'Pemadam Kebakaran',
-        emergencyHotline: 'Hotline Darurat',
+        emergencyHotline: 'Layanan Darurat',
         tapToCall: 'Ketuk kontak untuk menelepon langsung dari ponsel Anda',
 
         // Safety
