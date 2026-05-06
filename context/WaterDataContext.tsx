@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { useWaterData } from '@/hooks/useWaterData';
-import type { WaterReading, ThresholdSettings, LogEntry } from '@/hooks/useWaterData';
+import type { WaterReading, ThresholdSettings, LogEntry, SensorLocation } from '@/hooks/useWaterData';
 import type { Firestore } from 'firebase/firestore';
 
 interface WaterDataContextType {
@@ -17,6 +17,7 @@ interface WaterDataContextType {
     updateThresholds: (settings: ThresholdSettings) => Promise<void>;
     addLogEntry: (message: string, type: 'info' | 'alert') => Promise<void>;
     firebaseDb: Firestore | null;
+    sensorLocation: SensorLocation;
 }
 
 const WaterDataContext = createContext<WaterDataContextType | undefined>(undefined);

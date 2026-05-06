@@ -1,5 +1,11 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import {
+    initializeFirestore,
+    getFirestore,
+    Firestore,
+    persistentLocalCache,
+    persistentMultipleTabManager,
+} from 'firebase/firestore';
 import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -43,7 +49,21 @@ export const initializeFirebase = (): { app: FirebaseApp | null; db: Firestore |
 
     try {
         app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-        db = getFirestore(app);
+
+        // Use initializeFirestore with persistent cache (replaces deprecated enableMultiTabIndexedDbPersistence).
+        // This caches Firestore data locally so subsequent reads are served from IndexedDB,
+        // massively reducing billable network reads on page reloads.
+        try {
+            db = initializeFirestore(app, {
+                localCache: persistentLocalCache({
+                    tabManager: persistentMultipleTabManager(),
+                }),
+            });
+        } catch {
+            // If already initialized (e.g. HMR), fall back to getFirestore
+            db = getFirestore(app);
+        }
+
         auth = getAuth(app);
 
         // Set persistence to LOCAL (survives browser restarts)

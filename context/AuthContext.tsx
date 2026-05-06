@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import {
     User,
     onAuthStateChanged,
@@ -10,8 +10,14 @@ import {
 } from 'firebase/auth';
 import {
     doc,
-    getDoc,
+    onSnapshot,
     updateDoc,
+    setDoc,
+    deleteDoc,
+    collection,
+    query,
+    where,
+    getDocs,
     Timestamp,
     Firestore
 } from 'firebase/firestore';
@@ -38,6 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isConfigured, setIsConfigured] = useState(false);
     const [firebaseAuth, setFirebaseAuth] = useState<Auth | null>(null);
     const [firebaseDb, setFirebaseDb] = useState<Firestore | null>(null);
+    const roleUnsubscribeRef = useRef<(() => void) | null>(null);
+    const lastAccessUpdatedRef = useRef(false);
 
     useEffect(() => {
         // Initialize Firebase and get auth instance
@@ -65,39 +73,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setFirebaseDb(dbInstance);
 
         // Listen for auth state changes
-        const unsubscribe = onAuthStateChanged(authInstance, async (authUser) => {
+        const unsubscribe = onAuthStateChanged(authInstance, (authUser) => {
             setUser(authUser);
 
+            // Clean up previous role listener
+            if (roleUnsubscribeRef.current) {
+                roleUnsubscribeRef.current();
+                roleUnsubscribeRef.current = null;
+            }
+            // Reset lastAccess guard for new user
+            lastAccessUpdatedRef.current = false;
+
             if (authUser && dbInstance) {
-                // Fetch admin role by document ID (user UID) — single read instead of collection query
-                try {
-                    const adminDocRef = doc(dbInstance, 'admins', authUser.uid);
-                    const adminDocSnap = await getDoc(adminDocRef);
+                // Subscribe to admin role in real-time so role changes are reflected immediately
+                const adminDocRef = doc(dbInstance, 'admins', authUser.uid);
 
-                    if (adminDocSnap.exists()) {
-                        const data = adminDocSnap.data();
-                        setAdminRole(data.role || 'admin');
+                roleUnsubscribeRef.current = onSnapshot(adminDocRef, async (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        const role = data.role || 'admin';
+                        console.log('[AuthContext] Admin role resolved:', role, 'for UID:', authUser.uid);
+                        setAdminRole(role);
 
-                        // Update lastAccess timestamp
-                        updateDoc(adminDocRef, {
-                            lastAccess: Timestamp.now(),
-                        }).catch(console.error);
+                        // Update lastAccess ONCE per session to avoid infinite loop
+                        // (writing to a doc we're listening on would re-trigger the snapshot)
+                        if (!lastAccessUpdatedRef.current) {
+                            lastAccessUpdatedRef.current = true;
+                            updateDoc(adminDocRef, {
+                                lastAccess: Timestamp.now(),
+                            }).catch(console.error);
+                        }
                     } else {
-                        // User exists in Auth but not in admins collection
-                        setAdminRole('admin');
+                        // No document by UID — try to find by email (handles legacy data where doc ID ≠ UID)
+                        console.warn('[AuthContext] No admin document for UID:', authUser.uid, '— searching by email...');
+                        try {
+                            const adminsRef = collection(dbInstance, 'admins');
+                            const q = query(adminsRef, where('email', '==', authUser.email));
+                            const snapshot = await getDocs(q);
+
+                            if (!snapshot.empty) {
+                                const existingDoc = snapshot.docs[0];
+                                const data = existingDoc.data();
+                                const role = data.role || 'admin';
+                                console.log('[AuthContext] Found admin by email with role:', role, '— migrating document to UID:', authUser.uid);
+
+                                // Migrate: copy document to UID-keyed doc and delete old one
+                                await setDoc(adminDocRef, {
+                                    ...data,
+                                    lastAccess: Timestamp.now(),
+                                });
+                                if (existingDoc.id !== authUser.uid) {
+                                    await deleteDoc(doc(dbInstance, 'admins', existingDoc.id));
+                                }
+
+                                setAdminRole(role);
+                            } else {
+                                console.warn('[AuthContext] No admin document found by email either — defaulting to admin role');
+                                setAdminRole('admin');
+                            }
+                        } catch (migrationErr) {
+                            console.error('[AuthContext] Error during email fallback lookup:', migrationErr);
+                            setAdminRole('admin');
+                        }
                     }
-                } catch (err) {
-                    console.error('Error fetching admin role:', err);
+                    setLoading(false);
+                }, (err) => {
+                    console.error('[AuthContext] Error watching admin role:', err);
                     setAdminRole(null);
-                }
+                    setLoading(false);
+                });
             } else {
                 setAdminRole(null);
+                setLoading(false);
             }
-
-            setLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            if (roleUnsubscribeRef.current) {
+                roleUnsubscribeRef.current();
+            }
+        };
     }, []);
 
     const signIn = async (email: string, password: string) => {

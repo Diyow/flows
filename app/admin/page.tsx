@@ -8,6 +8,7 @@ import { StatsCard } from '@/components/StatsCard';
 import { ThresholdControls } from '@/components/ThresholdControls';
 import { EventLogs } from '@/components/EventLogs';
 import { AdminManagement } from '@/components/AdminManagement';
+import { SensorLocationSettings } from '@/components/SensorLocationSettings';
 import { HistoricalData } from '@/components/HistoricalData';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -183,8 +184,13 @@ export default function AdminPage() {
                     </div>
                 </section>
 
-                {/* Admin Management */}
-                <section>
+                {/* Sensor Location & Admin Management */}
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SensorLocationSettings
+                        firebaseDb={firebaseDb}
+                        onLogEvent={addLogEntry}
+                        adminEmail={user.email ?? undefined}
+                    />
                     <AdminManagement onLogEvent={addLogEntry} />
                 </section>
 

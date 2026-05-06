@@ -29,6 +29,12 @@ export interface ThresholdSettings {
     dangerLevel: number;
 }
 
+export interface SensorLocation {
+    lat: number;
+    lng: number;
+    name: string;
+}
+
 export interface LogEntry {
     id?: string;
     message: string;
@@ -112,6 +118,11 @@ export function useWaterData() {
     const [isOnline, setIsOnline] = useState<boolean>(true);
     const [useFirebase, setUseFirebase] = useState<boolean>(false);
     const [firebaseDb, setFirebaseDb] = useState<Firestore | null>(null);
+    const [sensorLocation, setSensorLocation] = useState<SensorLocation>({
+        lat: -8.701921,
+        lng: 115.233999,
+        name: 'Denpasar, Sidakarya',
+    });
 
     // Load cached settings from localStorage after mount (avoids hydration mismatch)
     useEffect(() => {
@@ -143,7 +154,7 @@ export function useWaterData() {
             collection(firebaseDb, 'readings'),
             where('timestamp', '>=', Timestamp.fromDate(twentyFourHoursAgo)),
             orderBy('timestamp', 'desc'),
-            limit(100)
+            limit(30)
         );
 
         const unsubscribe = onSnapshot(readingsQuery, (snapshot) => {
@@ -161,11 +172,12 @@ export function useWaterData() {
             // Readings come in desc order from query, reverse for chronological history
             const chronological = readings.reverse();
 
-            // Set current values from the raw latest reading (unsmoothed)
+            // Set current values + lastUpdate from the latest reading
             if (chronological.length > 0) {
                 const latest = chronological[chronological.length - 1];
                 setCurrentLevel(latest.level);
                 setCurrentFlow(latest.flow);
+                setLastUpdate(latest.timestamp);
                 setIsOnline(true);
             }
 
@@ -180,26 +192,8 @@ export function useWaterData() {
         return () => unsubscribe();
     }, [useFirebase, firebaseDb]);
 
-    // Subscribe to the latest reading (no time filter) just for lastUpdate display
-    useEffect(() => {
-        if (!useFirebase || !firebaseDb) return;
-
-        const latestQuery = query(
-            collection(firebaseDb, 'readings'),
-            orderBy('timestamp', 'desc'),
-            limit(1)
-        );
-
-        const unsubscribe = onSnapshot(latestQuery, (snapshot) => {
-            if (!snapshot.empty) {
-                const data = snapshot.docs[0].data();
-                const ts = data.timestamp?.toDate?.() || new Date();
-                setLastUpdate(ts);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [useFirebase, firebaseDb]);
+    // lastUpdate is now extracted from the main readings listener above
+    // — no separate listener needed, saving ~1,800 reads/hour
 
     // Subscribe to Firebase settings if configured
     // No getDoc call — we rely on onSnapshot + localStorage cache to avoid extra reads
@@ -233,7 +227,7 @@ export function useWaterData() {
         const logsQuery = query(
             collection(firebaseDb, 'logs'),
             orderBy('timestamp', 'desc'),
-            limit(50)
+            limit(20)
         );
 
         const unsubscribe = onSnapshot(logsQuery, (snapshot) => {
@@ -299,6 +293,35 @@ export function useWaterData() {
         return 'safe';
     }, [currentLevel, currentFlow, settings]);
 
+    // Subscribe to sensor location settings (centralized — used by SensorMap + SensorLocationSettings)
+    useEffect(() => {
+        if (!useFirebase || !firebaseDb) return;
+
+        // Load cached location first
+        try {
+            const cached = localStorage.getItem('flows-location-cache');
+            if (cached) setSensorLocation(JSON.parse(cached));
+        } catch { /* ignore */ }
+
+        const locationRef = doc(firebaseDb, 'settings', 'location');
+        const unsubscribe = onSnapshot(locationRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const loc: SensorLocation = {
+                    lat: data.lat ?? -8.701921,
+                    lng: data.lng ?? 115.233999,
+                    name: data.name ?? 'Denpasar, Sidakarya',
+                };
+                setSensorLocation(loc);
+                try {
+                    localStorage.setItem('flows-location-cache', JSON.stringify(loc));
+                } catch { /* ignore */ }
+            }
+        });
+
+        return () => unsubscribe();
+    }, [useFirebase, firebaseDb]);
+
     return {
         currentLevel,
         currentFlow,
@@ -311,5 +334,6 @@ export function useWaterData() {
         updateThresholds,
         addLogEntry,
         firebaseDb,
+        sensorLocation,
     };
 }
