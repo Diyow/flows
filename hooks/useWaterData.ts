@@ -27,8 +27,6 @@ export interface WaterReading {
 export interface ThresholdSettings {
     warningLevel: number;
     dangerLevel: number;
-    warningFlow: number;
-    dangerFlow: number;
 }
 
 export interface LogEntry {
@@ -108,8 +106,6 @@ export function useWaterData() {
     const [settings, setSettings] = useState<ThresholdSettings>({
         warningLevel: 2.0,
         dangerLevel: 3.5,
-        warningFlow: 200,
-        dangerFlow: 350,
     });
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date(0));
@@ -218,8 +214,6 @@ export function useWaterData() {
                 const newSettings: ThresholdSettings = {
                     warningLevel: data.warningLevel || 2.0,
                     dangerLevel: data.dangerLevel || 3.5,
-                    warningFlow: data.warningFlow || 200,
-                    dangerFlow: data.dangerFlow || 350,
                 };
                 setSettings(newSettings);
                 // Cache to localStorage for future instant loads
@@ -268,8 +262,6 @@ export function useWaterData() {
             await updateDoc(settingsRef, {
                 warningLevel: newSettings.warningLevel,
                 dangerLevel: newSettings.dangerLevel,
-                warningFlow: newSettings.warningFlow,
-                dangerFlow: newSettings.dangerFlow,
             });
         }
     }, [useFirebase, firebaseDb]);
@@ -297,11 +289,11 @@ export function useWaterData() {
     // Determine current status based on both level and flow
     const getStatus = useCallback((): 'safe' | 'warning' | 'danger' => {
         // Check for danger conditions first
-        if (currentLevel >= settings.dangerLevel || currentFlow >= settings.dangerFlow) {
+        if (currentLevel >= settings.dangerLevel) {
             return 'danger';
         }
         // Check for warning conditions
-        if (currentLevel >= settings.warningLevel || currentFlow >= settings.warningFlow) {
+        if (currentLevel >= settings.warningLevel) {
             return 'warning';
         }
         return 'safe';

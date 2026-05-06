@@ -178,14 +178,6 @@ export default function AdminPage() {
                                     <p className="text-xs text-gray-400">Level Danger</p>
                                     <p className="text-lg font-bold text-red-400">{settings.dangerLevel}m</p>
                                 </div>
-                                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
-                                    <p className="text-xs text-gray-400">Flow Warn</p>
-                                    <p className="text-lg font-bold text-amber-400">{settings.warningFlow}</p>
-                                </div>
-                                <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-center">
-                                    <p className="text-xs text-gray-400">Flow Danger</p>
-                                    <p className="text-lg font-bold text-red-400">{settings.dangerFlow}</p>
-                                </div>
                             </div>
                         </div>
                     </div>

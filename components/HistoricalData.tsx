@@ -131,9 +131,9 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
     // Compute status for a single reading
     const computeStatus = useCallback(
         (reading: WaterReading): 'safe' | 'warning' | 'danger' => {
-            if (reading.level >= settings.dangerLevel || reading.flow >= settings.dangerFlow)
+            if (reading.level >= settings.dangerLevel)
                 return 'danger';
-            if (reading.level >= settings.warningLevel || reading.flow >= settings.warningFlow)
+            if (reading.level >= settings.warningLevel)
                 return 'warning';
             return 'safe';
         },
@@ -280,8 +280,6 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
             thresholds: {
                 warningLevel: settings.warningLevel,
                 dangerLevel: settings.dangerLevel,
-                warningFlow: settings.warningFlow,
-                dangerFlow: settings.dangerFlow,
             },
             totalRecords: processedData.length,
             rawRecords: rawCount,

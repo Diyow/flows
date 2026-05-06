@@ -8,8 +8,6 @@ interface WaterLevelChartProps {
     data: WaterReading[];
     warningLevel: number;
     dangerLevel: number;
-    warningFlow?: number;
-    dangerFlow?: number;
     showFlow?: boolean;
 }
 
@@ -17,8 +15,6 @@ export function WaterLevelChart({
     data,
     warningLevel,
     dangerLevel,
-    warningFlow = 200,
-    dangerFlow = 350,
     showFlow = true
 }: WaterLevelChartProps) {
     const chartData = data.map((reading) => ({
@@ -30,6 +26,14 @@ export function WaterLevelChart({
         level: reading.level,
         flow: reading.flow || 0,
     }));
+
+    // Auto-scale level Y-axis based on actual data and threshold values
+    const levelValues = chartData.map(d => d.level);
+    const maxLevelData = levelValues.length > 0 ? Math.max(...levelValues) : 0;
+    const maxLevelThreshold = Math.max(warningLevel, dangerLevel);
+    const maxLevel = Math.max(maxLevelData, maxLevelThreshold);
+    const levelPadding = Math.max(maxLevel * 0.2, 1);
+    const levelDomain: [number, number] = [0, Math.ceil(maxLevel + levelPadding)];
 
     // Auto-scale flow Y-axis based on actual data values only
     const flowValues = chartData.map(d => d.flow).filter(v => v > 0);
@@ -81,7 +85,7 @@ export function WaterLevelChart({
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
-                            domain={[0, 5]}
+                            domain={levelDomain}
                             tickFormatter={(value) => `${value}m`}
                         />
                         {showFlow && (

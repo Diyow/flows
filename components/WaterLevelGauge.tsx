@@ -11,11 +11,13 @@ interface WaterLevelGaugeProps {
 
 export function WaterLevelGauge({
     level,
-    maxLevel = 5,
+    maxLevel,
     warningLevel,
     dangerLevel
 }: WaterLevelGaugeProps) {
-    const percentage = Math.min((level / maxLevel) * 100, 100);
+    // Auto-scale: default maxLevel to dangerLevel * 1.5 (rounded up) so thresholds are visible
+    const effectiveMaxLevel = maxLevel ?? Math.ceil(dangerLevel * 1.5);
+    const percentage = Math.min((level / effectiveMaxLevel) * 100, 100);
 
     // Determine color based on thresholds
     const getColor = () => {
@@ -32,8 +34,8 @@ export function WaterLevelGauge({
 
     // Generate tick marks
     const ticks = [];
-    for (let i = 0; i <= maxLevel; i++) {
-        const tickPercentage = (i / maxLevel) * 100;
+    for (let i = 0; i <= effectiveMaxLevel; i++) {
+        const tickPercentage = (i / effectiveMaxLevel) * 100;
         ticks.push(
             <div
                 key={i}
@@ -70,7 +72,7 @@ export function WaterLevelGauge({
                     {/* Warning Line */}
                     <div
                         className="absolute left-0 right-0 border-t-2 border-dashed border-amber-500/70"
-                        style={{ bottom: `${(warningLevel / maxLevel) * 100}%` }}
+                        style={{ bottom: `${(warningLevel / effectiveMaxLevel) * 100}%` }}
                     >
                         <span className="absolute -right-2 -top-3 text-xs text-amber-400 bg-gray-900 px-1 rounded">⚠</span>
                     </div>
@@ -78,7 +80,7 @@ export function WaterLevelGauge({
                     {/* Danger Line */}
                     <div
                         className="absolute left-0 right-0 border-t-2 border-dashed border-red-500/70"
-                        style={{ bottom: `${(dangerLevel / maxLevel) * 100}%` }}
+                        style={{ bottom: `${(dangerLevel / effectiveMaxLevel) * 100}%` }}
                     >
                         <span className="absolute -right-2 -top-3 text-xs text-red-400 bg-gray-900 px-1 rounded">☠</span>
                     </div>
