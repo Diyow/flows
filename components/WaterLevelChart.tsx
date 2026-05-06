@@ -61,7 +61,7 @@ export function WaterLevelChart({
     };
 
     return (
-        <div className="p-6 rounded-2xl bg-gray-800/50 border border-gray-700">
+        <div className="h-full p-6 rounded-2xl bg-gray-800/50 border border-gray-700">
             <div className="flex items-center gap-2 mb-6">
                 <TrendingUp className="w-5 h-5 text-cyan-400" />
                 <h3 className="text-lg font-semibold text-white">24-Hour History</h3>
