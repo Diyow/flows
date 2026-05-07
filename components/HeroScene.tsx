@@ -27,24 +27,19 @@
 
 'use client'; // Required: Three.js only works in the browser, not on the server
 
-import { Suspense, useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useRef, useMemo, useEffect } from 'react';
+import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber';
 import {
   useGLTF,        // Hook to load .gltf/.glb 3D models
   Environment,    // Pre-built lighting environments (city, sunset, etc.)
   ContactShadows, // Soft shadow plane beneath objects
-  Float,          // Makes children gently bob up and down
+  OrbitControls,  // Camera controls
+  useDepthBuffer, // Renders depth buffer of the scene
 } from '@react-three/drei';
 import * as THREE from 'three';
+import { Water2 } from 'three-stdlib';
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────
-// Camera position extracted from the GLTF file's embedded camera node.
-// This is the exact viewpoint the 3D artist set in Blender.
-// Format: { x, y, z } — in Three.js, Y is up, Z is towards you.
-const SCENE_CAM = {
-  position: [6.54, 6.02, 10.67] as [number, number, number],
-  fov: 50, // Field of view in degrees (lower = more telephoto/zoomed in)
-};
 
 // ─── RiverModel ─────────────────────────────────────────────────────
 /**
@@ -62,13 +57,202 @@ const SCENE_CAM = {
  *   - scale={1.8}           → make the model bigger/smaller
  *   - position={[0,-0.8,0]} → shift model (x, y, z)
  */
+function CustomWater({ waterNode, depthBuffer }: any) {
+  const [normalMap0, normalMap1] = useLoader(THREE.TextureLoader, [
+    '/textures/water/Water_1_M_Normal.jpg',
+    '/textures/water/Water_2_M_Normal.jpg',
+  ]);
+  const { size, camera, gl } = useThree();
+  const dpr = gl.getPixelRatio();
+  const uniformsRef = useRef<any>(null);
+
+  useFrame((state) => {
+    if (uniformsRef.current) {
+      uniformsRef.current.uTime.value = state.clock.elapsedTime;
+    }
+  });
+
+  useEffect(() => {
+    normalMap0.wrapS = normalMap0.wrapT = THREE.RepeatWrapping;
+    normalMap1.wrapS = normalMap1.wrapT = THREE.RepeatWrapping;
+  }, [normalMap0, normalMap1]);
+
+  const water = useMemo(() => {
+    waterNode.geometry.computeBoundingBox();
+    const sizeVec = new THREE.Vector3();
+    waterNode.geometry.boundingBox.getSize(sizeVec);
+    const centerVec = new THREE.Vector3();
+    waterNode.geometry.boundingBox.getCenter(centerVec);
+
+    // Create a high-res plane so we have enough vertices to physically displace!
+    const geom = new THREE.PlaneGeometry(sizeVec.x, sizeVec.z, 64, 256);
+    // Move it to XZ plane and translate it to perfectly match the original geometry's bounds
+    geom.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+    geom.translate(centerVec.x, centerVec.y, centerVec.z);
+
+    // 1. Generate world-space planar UVs to guarantee perfect ripples
+    // We do this BEFORE altering the geometry, using the node's true world matrix
+    waterNode.updateMatrixWorld(true);
+    const uvAttribute = geom.attributes.uv;
+    const posAttribute = geom.attributes.position;
+    if (uvAttribute && posAttribute) {
+      const v = new THREE.Vector3();
+      for (let i = 0; i < uvAttribute.count; i++) {
+        v.fromBufferAttribute(posAttribute, i);
+        v.applyMatrix4(waterNode.matrixWorld); // Get actual physical world coordinates
+        uvAttribute.setXY(i, v.x * 0.3, v.z * 0.3); // 0.3 tiles per world unit
+      }
+      uvAttribute.needsUpdate = true;
+    }
+
+    // 2. Move geometry to XY plane (Reflector requires this)
+    geom.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+    geom.computeBoundingBox();
+    geom.computeBoundingSphere();
+
+    const w = new Water2(geom, {
+      color: '#67e8f9',
+      scale: 1,
+      flowDirection: new THREE.Vector2(0, 1),
+      textureWidth: 1024,
+      textureHeight: 1024,
+      normalMap0,
+      normalMap1,
+    });
+
+    // Make absolutely sure water doesn't render into the depth buffer itself
+    w.material.depthWrite = false;
+
+    // --- CUSTOM DEPTH-FADE FOAM SHADER & VERTEX WAVES ---
+    w.material.onBeforeCompile = (shader) => {
+      uniformsRef.current = shader.uniforms;
+
+      // 1. Pass uniforms to the shader
+      shader.uniforms.tDepth = { value: depthBuffer };
+      shader.uniforms.cameraNear = { value: camera.near };
+      shader.uniforms.cameraFar = { value: camera.far };
+      shader.uniforms.uTime = { value: 0 }; // Used for vertex waves
+      // Multiply logical size by device pixel ratio to get exact physical pixels on retina screens
+      shader.uniforms.screenSize = { value: new THREE.Vector2(size.width * dpr, size.height * dpr) };
+
+      // --- VERTEX SHADER INJECTION (Physical Waves) ---
+      shader.vertexShader = `
+        uniform float uTime;
+        ${shader.vertexShader}
+      `;
+
+      shader.vertexShader = shader.vertexShader.replace(
+        'void main() {',
+        `
+        void main() {
+          vec3 displacedPos = position;
+          // The Reflector requires the geometry to be on the XY plane, so Z is the "up/down" height.
+          // Add complex overlapping sine waves to physically bob the water up and down!
+          // Toned down frequency and height to simulate a gentle river instead of a choppy sea
+          float wave1 = sin(position.x * 1.0 + uTime * 0.8) * 0.015;
+          float wave2 = cos(position.y * 2.0 - uTime * 0.5) * 0.01;
+          displacedPos.z += wave1 + wave2;
+        `
+      );
+
+      // Replace all usage of the original position with our physically displaced position
+      shader.vertexShader = shader.vertexShader.replace(
+        /vec4\( position, 1\.0 \)/g,
+        'vec4( displacedPos, 1.0 )'
+      );
+
+      // 2. Inject uniform definitions into the fragment shader header
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <logdepthbuf_pars_fragment>',
+        `
+        #include <logdepthbuf_pars_fragment>
+        #include <packing>
+        uniform sampler2D tDepth;
+        uniform float cameraNear;
+        uniform float cameraFar;
+        uniform vec2 screenSize;
+        `
+      );
+
+      // 3. Intercept the final color calculation to mix in the foam and create a jagged shoreline
+      shader.fragmentShader = shader.fragmentShader.replace(
+        'gl_FragColor = vec4( color, 1.0 ) * mix( refractColor, reflectColor, reflectance );',
+        `
+        vec4 waterBaseColor = vec4( color, 1.0 ) * mix( refractColor, reflectColor, reflectance );
+        
+        // Calculate screen UVs to sample the depth texture
+        vec2 screenUv = gl_FragCoord.xy / screenSize;
+        float sceneZ = texture2D(tDepth, screenUv).x;
+        
+        // Convert raw Z values to linear view distances (how far away they are from the camera in meters)
+        float viewZScene = perspectiveDepthToViewZ( sceneZ, cameraNear, cameraFar );
+        float viewZWater = perspectiveDepthToViewZ( gl_FragCoord.z, cameraNear, cameraFar );
+        
+        // The difference is how deep the water is at this exact pixel
+        float depthDiff = abs(viewZScene - viewZWater);
+        
+        // Generate moving noise using the water's built-in animated normal maps
+        float noise = normalColor.r * 2.0 - 1.0; // Rippling values from -1 to 1
+        
+        // --- ORGANIC CRASHING FOAM ---
+        // Distort the depth distance using noise so the foam band is jagged and turbulent
+        float distortedDepth = depthDiff + noise * 0.15;
+        
+        // Calculate foam intensity (1.0 at the shore, fading to 0.0 in deep water)
+        // Reduced thickness so foam stays tight against the shoreline
+        float foamThickness = 0.25;
+        float foamFactor = 1.0 - smoothstep(0.0, foamThickness, distortedDepth);
+        
+        // Heavily lessen the intensity so the foam is very subtle and translucent
+        foamFactor = clamp(foamFactor * 0.4, 0.0, 1.0);
+        
+        // Use a softer, darker cyan/blue foam color instead of bright white
+        vec3 foamColor = vec3(0.4, 0.8, 0.9);
+        gl_FragColor = mix(waterBaseColor, vec4(foamColor, 1.0), foamFactor);
+        `
+      );
+    };
+
+    // 3. Counter-rotate the mesh by -90 on X so it returns to the XZ plane
+    w.rotation.set(-Math.PI / 2, 0, 0);
+
+    // 4. Lift slightly in LOCAL space to prevent Z-fighting with the riverbed
+    w.position.set(0, 0, 0.05);
+
+    return w;
+  }, [waterNode, normalMap0, normalMap1, depthBuffer, camera, size]);
+
+  return <primitive object={water} />;
+}
+
 function RiverModel() {
-  const { scene } = useGLTF('/models/scene.gltf');
+  const { scene, nodes } = useGLTF('/models/scene.gltf');
+  const set = useThree((state) => state.set);
+
+  // Creates an invisible depth snapshot of the entire scene for the water shader.
+  // size: 0 forces it to dynamically match the exact physical screen dimensions (fixes pixelation)
+  const depthBuffer = useDepthBuffer({ frames: Infinity, size: 0 });
+
+  useEffect(() => {
+    if (nodes.Camera) {
+      set({ camera: nodes.Camera as THREE.PerspectiveCamera });
+    }
+    if (nodes.Water_Placeholder) {
+      nodes.Water_Placeholder.visible = false;
+    }
+  }, [nodes, set]);
+
+  const waterNode = nodes.Water_Placeholder as THREE.Mesh;
 
   return (
-    <group scale={1.8} position={[0, -0.8, 0]}>
+    <>
       <primitive object={scene} />
-    </group>
+      {waterNode && (
+        <group position={waterNode.position} rotation={waterNode.rotation} scale={waterNode.scale}>
+          <CustomWater waterNode={waterNode} depthBuffer={depthBuffer} />
+        </group>
+      )}
+    </>
   );
 }
 
@@ -167,43 +351,7 @@ function WaterParticles({ count = 120 }: { count?: number }) {
   );
 }
 
-// ─── GlowRing ───────────────────────────────────────────────────────
-/**
- * A thin glowing torus (donut shape) at the base of the scene.
- * Purely decorative — adds a futuristic/tech feel.
- *
- * TWEAKABLE VALUES:
- *   - args={[5.5, 0.015, 16, 100]} → [radius, tube thickness, radial segments, tubular segments]
- *   - emissiveIntensity={3}        → glow brightness
- *   - opacity={0.4}                → transparency
- *   - rotation speed: 0.1          → how fast it spins (line 178)
- */
-function GlowRing() {
-  const ref = useRef<THREE.Mesh>(null);
 
-  useFrame((state) => {
-    if (ref.current) {
-      // Lay the ring flat (rotate 90° around X axis)
-      ref.current.rotation.x = Math.PI / 2;
-      // Slowly spin around Z axis
-      ref.current.rotation.z = state.clock.elapsedTime * 0.1;
-    }
-  });
-
-  return (
-    <mesh ref={ref} position={[0, -0.5, 0]}>
-      <torusGeometry args={[5.5, 0.015, 16, 100]} />
-      <meshStandardMaterial
-        color="#06b6d4"
-        emissive="#06b6d4"
-        emissiveIntensity={3}
-        transparent
-        opacity={0.4}
-        toneMapped={false}
-      />
-    </mesh>
-  );
-}
 
 // ─── Loader ─────────────────────────────────────────────────────────
 /**
@@ -284,68 +432,15 @@ export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps)
           Nothing here is HTML — it's all rendered on a GPU texture.
           ============================================================ */}
       <Canvas
-        camera={{
-          position: SCENE_CAM.position, // Use the GLTF scene's camera position
-          fov: SCENE_CAM.fov,           // Use the GLTF scene's field of view
-        }}
         gl={{ antialias: true, alpha: true }} // Smooth edges, transparent BG
         dpr={[1, 1.5]}                        // Device pixel ratio (retina)
         style={{ background: 'transparent' }}
       >
-        {/* Background color of the 3D viewport */}
-        <color attach="background" args={['#080c14']} />
-
-        {/* Fog: objects further than 40 units fade into the background.
-            This hides the hard edges of the scene and adds depth.
-            args={[color, near start, far end]} */}
-        <fog attach="fog" args={['#080c14', 12, 40]} />
-
-        {/* ── LIGHTING ──
-            Without lights, everything is black. We use several lights
-            from different angles to create depth and color variation.
-
-            ambientLight     → uniform light everywhere (no shadows)
-            directionalLight → like the sun (parallel rays, casts shadows)
-            pointLight       → like a light bulb (radiates in all directions)
-            spotLight        → like a flashlight (cone of light)
-        */}
-        <ambientLight intensity={0.8} />
-        <directionalLight
-          position={[5, 8, 5]}    // Top-right-front
-          intensity={2.5}
-          color="#e0f2fe"          // Cool white
-          castShadow
-        />
-        <directionalLight
-          position={[-3, 5, -2]}  // Top-left-back (fill light)
-          intensity={1.2}
-          color="#93c5fd"          // Soft blue
-        />
-        <pointLight position={[-4, 3, -4]} intensity={1.5} color="#67e8f9" />
-        <pointLight position={[3, 2, 5]} intensity={1.0} color="#a78bfa" />
-        <pointLight position={[0, 1, 0]} intensity={0.8} color="#22d3ee" />
-        <spotLight
-          position={[0, 10, 0]}   // Directly above
-          angle={0.4}             // Cone angle (radians)
-          penumbra={1}            // Soft edge (0=hard, 1=soft)
-          intensity={1.5}
-          color="#06b6d4"
-        />
-
         {/* Suspense shows <Loader /> while the GLTF model downloads */}
         <Suspense fallback={<Loader />}>
-          {/* Float makes children gently bob up and down */}
-          <Float
-            speed={1.5}                        // Bob speed
-            rotationIntensity={0.1}            // How much it tilts
-            floatIntensity={0.3}               // How far it moves up/down
-            floatingRange={[-0.05, 0.05]}      // Y range in units
-          >
-            <RiverModel />
-          </Float>
+          <RiverModel />
 
-          <WaterParticles />
-          <GlowRing />
+          {/* <WaterParticles /> */}
 
           {/* Soft shadow on the "floor" beneath the model */}
           <ContactShadows
@@ -356,13 +451,20 @@ export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps)
             far={5}
           />
 
-          {/* Environment map: provides ambient reflections/lighting.
-              Presets: 'city', 'sunset', 'dawn', 'night', 'forest',
-              'apartment', 'studio', 'warehouse', 'park', 'lobby' */}
-          <Environment preset="city" />
+          {/* Environment map: provides ambient reflections/lighting from HDRI */}
+          <Environment files="/models/EveningEnvironmentHDRI001_1K_HDR.exr" background />
+
+          {/* User controls for the camera: auto-rotate slowly, lock up/down movement */}
+          <OrbitControls
+            target={[-0.83, 0, 3.3]}
+            autoRotate
+            autoRotateSpeed={0.5}
+            enableZoom={false}
+            enablePan={false}
+            minPolarAngle={Math.PI / 3} // Lock vertical rotation to original camera angle (60 deg)
+            maxPolarAngle={Math.PI / 3}
+          />
         </Suspense>
-
-
       </Canvas>
 
       {/* ============================================================
