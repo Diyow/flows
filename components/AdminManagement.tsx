@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAdmins, AdminData } from '@/hooks/useAdmins';
+import { sendPasswordResetEmail, getAuth } from 'firebase/auth';
+import { initializeFirebase } from '@/lib/firebase';
 import {
     Users,
     UserPlus,
@@ -16,7 +18,9 @@ import {
     Mail,
     Lock,
     Loader2,
-    Crown
+    Crown,
+    KeyRound,
+    Clock
 } from 'lucide-react';
 
 interface AdminManagementProps {
@@ -42,6 +46,8 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
     const [inviteSuccess, setInviteSuccess] = useState('');
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [resetLoading, setResetLoading] = useState(false);
+    const [resetSuccess, setResetSuccess] = useState('');
 
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -93,6 +99,45 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
         } finally {
             setActionLoading(null);
         }
+    };
+
+    const handleSendPasswordReset = async () => {
+        if (!user?.email) return;
+        setResetLoading(true);
+        setResetSuccess('');
+        clearError();
+
+        try {
+            const { auth } = initializeFirebase();
+            if (!auth) throw new Error('Firebase Auth not configured');
+
+            await sendPasswordResetEmail(auth, user.email);
+
+            setResetSuccess(`Password reset email sent to your address (${user.email})`);
+            await onLogEvent?.(`${user.email} requested a password reset`, 'info');
+            setTimeout(() => setResetSuccess(''), 5000);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to send reset email';
+            clearError();
+            setResetSuccess('');
+            console.error('Password reset error:', message);
+        } finally {
+            setResetLoading(false);
+        }
+    };
+
+    const formatLastAccess = (date: Date) => {
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString();
     };
 
     const getRoleBadge = (admin: AdminData) => {
@@ -348,6 +393,10 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                             <p className="text-[11px] text-gray-500">
                                                 by {admin.createdBy}
                                             </p>
+                                            <p className="text-[11px] text-gray-400 flex items-center gap-1 justify-end mt-1">
+                                                <Clock className="w-3 h-3" />
+                                                {formatLastAccess(admin.lastAccess)}
+                                            </p>
                                         </div>
 
                                         {/* Actions (super_admin only, not for self) */}
@@ -395,6 +444,38 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                     </div>
                 )}
             </div>
+
+            {/* Password Reset Section */}
+            {user?.email && admins.length > 0 && (
+                <div className="mt-5 pt-5 border-t border-gray-700">
+                    {resetSuccess && (
+                        <div className="mb-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                            <p className="text-emerald-400 text-sm">{resetSuccess}</p>
+                        </div>
+                    )}
+                    <button
+                        onClick={handleSendPasswordReset}
+                        disabled={resetLoading}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-400 text-sm font-medium hover:bg-violet-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {resetLoading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Sending reset email...
+                            </>
+                        ) : (
+                            <>
+                                <KeyRound className="w-4 h-4" />
+                                Reset My Password
+                            </>
+                        )}
+                    </button>
+                    <p className="text-gray-500 text-xs text-center mt-2">
+                        Sends a password reset email to your currently logged-in address
+                    </p>
+                </div>
+            )}
 
             {/* Permission info */}
             {!isSuperAdmin && (
