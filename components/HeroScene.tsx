@@ -391,6 +391,22 @@ interface HeroSceneProps {
 export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps) {
   const { t } = useTranslation();
 
+  const [webglSupported, setWebglSupported] = useState(true);
+
+  useEffect(() => {
+    // Check for WebGL support and hardware acceleration
+    try {
+      const canvas = document.createElement('canvas');
+      // failIfMajorPerformanceCaveat: true will return null if hardware acceleration is disabled
+      const gl = canvas.getContext('webgl', { failIfMajorPerformanceCaveat: true }) ||
+        canvas.getContext('experimental-webgl', { failIfMajorPerformanceCaveat: true });
+
+      setWebglSupported(!!gl);
+    } catch (e) {
+      setWebglSupported(false);
+    }
+  }, []);
+
   // Color/text config for each status level
   const statusConfig = {
     safe: {
@@ -419,51 +435,63 @@ export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps)
   const cfg = statusConfig[status];
 
   return (
-    <div className="relative w-full h-[520px] md:h-[600px] rounded-2xl overflow-hidden border border-gray-800/60">
+    <div className="relative w-full h-[520px] md:h-[600px] rounded-2xl overflow-hidden  border-gray-800/60">
 
       {/* ============================================================
-          3D CANVAS — Everything inside <Canvas> is Three.js/WebGL.
-          Nothing here is HTML — it's all rendered on a GPU texture.
+          3D CANVAS or FALLBACK IMAGE
           ============================================================ */}
-      <Canvas
-        gl={{ antialias: true, alpha: true }} // Smooth edges, transparent BG
-        dpr={[1, 1.5]}                        // Device pixel ratio (retina)
-        style={{ background: 'transparent' }}
-      >
-        {/* Suspense shows <Loader /> while the GLTF model downloads */}
-        <Suspense fallback={<Loader />}>
-          <RiverModel />
+      {webglSupported ? (
+        <Canvas
+          gl={{ antialias: true, alpha: true }} // Smooth edges, transparent BG
+          dpr={[1, 1.5]}                        // Device pixel ratio (retina)
+          style={{ background: 'transparent' }}
+        >
+          {/* Suspense shows <Loader /> while the GLTF model downloads */}
+          <Suspense fallback={<Loader />}>
+            <RiverModel />
 
-          {/* <WaterParticles /> */}
+            {/* <WaterParticles /> */}
 
-          {/* Soft shadow on the "floor" beneath the model */}
-          <ContactShadows
-            position={[0, -1.5, 0]}
-            opacity={0.35}
-            scale={20}
-            blur={2.5}
-            far={5}
+            {/* Soft shadow on the "floor" beneath the model */}
+            <ContactShadows
+              position={[0, -1.5, 0]}
+              opacity={0.35}
+              scale={20}
+              blur={2.5}
+              far={5}
+            />
+
+            {/* Environment map: provides ambient reflections/lighting from HDRI */}
+            <Environment files="/models/EveningEnvironmentHDRI001_1K_HDR.exr" background />
+
+            {/* User controls for the camera: auto-rotate slowly, lock up/down movement */}
+            <OrbitControls
+              target={[-0.83, 0, 3.3]}
+              autoRotate
+              autoRotateSpeed={-0.1}
+              enableZoom={true}
+              minDistance={4}
+              maxDistance={13}
+              enablePan={false}
+              minPolarAngle={Math.PI / 5} // Lock vertical rotation to original camera angle (60 deg)
+              maxPolarAngle={Math.PI / 3}
+              minAzimuthAngle={Math.PI / 7}
+              maxAzimuthAngle={Math.PI / 1.15}
+            />
+          </Suspense>
+        </Canvas>
+      ) : (
+        /* Fallback for when Hardware Acceleration or WebGL is disabled */
+        <div className="absolute inset-0 w-full h-full bg-[#0a0a0f]">
+          <img
+            src="/River.webp"
+            alt="River Scene Fallback"
+            className="w-full h-full object-cover opacity-50"
           />
-
-          {/* Environment map: provides ambient reflections/lighting from HDRI */}
-          <Environment files="/models/EveningEnvironmentHDRI001_1K_HDR.exr" background />
-
-          {/* User controls for the camera: auto-rotate slowly, lock up/down movement */}
-          <OrbitControls
-            target={[-0.83, 0, 3.3]}
-            autoRotate
-            autoRotateSpeed={-0.1}
-            enableZoom={true}
-            minDistance={4}
-            maxDistance={13}
-            enablePan={false}
-            minPolarAngle={Math.PI / 5} // Lock vertical rotation to original camera angle (60 deg)
-            maxPolarAngle={Math.PI / 3}
-            minAzimuthAngle={Math.PI / 7}
-            maxAzimuthAngle={Math.PI / 1.15}
-          />
-        </Suspense>
-      </Canvas>
+          {/* Subtle gradient to match the scene's mood */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-[#0a0a0f]/50" />
+        </div>
+      )}
 
       {/* ============================================================
           HTML OVERLAYS — These are normal HTML/CSS elements positioned
