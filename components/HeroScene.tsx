@@ -272,14 +272,37 @@ function RiverModel({ currentLevel, currentFlow, dangerLevel }: { currentLevel: 
   // size: 512 is a good balance between foam quality and performance (size: 0 was too heavy)
   const depthBuffer = useDepthBuffer({ frames: Infinity, size: 512 });
 
+  const { camera, viewport } = useThree();
+  const pCam = camera as THREE.PerspectiveCamera;
+  const aspect = viewport.aspect;
+
   useEffect(() => {
     if (nodes.Camera) {
-      set({ camera: nodes.Camera as THREE.PerspectiveCamera });
+      const gltfCam = nodes.Camera as THREE.PerspectiveCamera;
+
+      // Copy basic properties from the GLTF camera
+      pCam.position.copy(gltfCam.position);
+      pCam.quaternion.copy(gltfCam.quaternion);
+
+      // Responsive FOV: On mobile (aspect < 1), we increase the FOV 
+      // so the scene doesn't look overly "zoomed in" and preserves 
+      // the perspective inclination of the river walls.
+      if (aspect < 1) {
+        // Increase FOV for portrait screens (mobile)
+        // A simple rule of thumb: fov_vertical = fov_horizontal / aspect
+        // We use a slightly moderated version to keep it looking natural.
+        pCam.fov = Math.min(gltfCam.fov * (1.2 / aspect), 90);
+      } else {
+        pCam.fov = gltfCam.fov;
+      }
+
+      pCam.updateProjectionMatrix();
     }
+
     if (nodes.Water_Placeholder) {
       nodes.Water_Placeholder.visible = false;
     }
-  }, [nodes, set]);
+  }, [nodes, camera, aspect]);
 
   const waterNode = nodes.Water_Placeholder as THREE.Mesh;
 
@@ -357,6 +380,26 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
   const [debugMode, setDebugMode] = useState(false);
   const [manualLevel, setManualLevel] = useState(currentLevel);
   const [manualFlow, setManualFlow] = useState(currentFlow);
+  const [isVisible, setIsVisible] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Optimization: Pause rendering when out of view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+        // Temporary logs for verification
+        console.log(entry.isIntersecting ? "🟢 3D Rendering Resumed" : "🔴 3D Rendering Paused");
+      },
+      { threshold: 0.05 } // Trigger when at least 5% is visible
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   // Sync manual values when props change, but only if not in debug mode
   useEffect(() => {
@@ -408,7 +451,7 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
   const cfg = statusConfig[status];
 
   return (
-    <div className="relative w-full h-[520px] md:h-[600px] rounded-2xl overflow-hidden  border-gray-800/60">
+    <div ref={containerRef} className="relative w-full h-[520px] md:h-[600px] rounded-2xl overflow-hidden  border-gray-800/60">
 
       {/* ============================================================
           3D CANVAS or FALLBACK IMAGE
@@ -418,6 +461,7 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
           gl={{ antialias: true, alpha: true }} // Smooth edges, transparent BG
           dpr={[1, 1.5]}                        // Device pixel ratio (retina)
           style={{ background: 'transparent' }}
+          frameloop={isVisible ? 'always' : 'never'} // Stop rendering when out of view
         >
           {/* Suspense shows <Loader /> while the GLTF model downloads */}
           <Suspense fallback={<Loader />}>
