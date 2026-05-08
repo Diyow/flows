@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle, CheckCircle, AlertCircle, Droplets, Waves } from 'lucide-react';
+import { useTranslation } from '@/context/LanguageContext';
 
 interface StatusIndicatorProps {
     status: 'safe' | 'warning' | 'danger';
@@ -9,10 +10,12 @@ interface StatusIndicatorProps {
 }
 
 export function StatusIndicator({ status, currentLevel, currentFlow }: StatusIndicatorProps) {
+    const { t } = useTranslation();
+
     const statusConfig = {
         safe: {
-            label: 'SAFE',
-            sublabel: 'Water levels and flow are normal',
+            label: t('safe'),
+            sublabel: t('safeMessage'),
             bgClass: 'bg-emerald-500/10 border-emerald-500/30',
             textClass: 'text-emerald-400',
             iconBg: 'bg-emerald-500/20',
@@ -20,8 +23,8 @@ export function StatusIndicator({ status, currentLevel, currentFlow }: StatusInd
             animation: '',
         },
         warning: {
-            label: 'WARNING',
-            sublabel: 'Elevated readings detected - Stay alert',
+            label: t('warning'),
+            sublabel: t('warningMessage'),
             bgClass: 'bg-amber-500/10 border-amber-500/30',
             textClass: 'text-amber-400',
             iconBg: 'bg-amber-500/20',
@@ -29,8 +32,8 @@ export function StatusIndicator({ status, currentLevel, currentFlow }: StatusInd
             animation: '',
         },
         danger: {
-            label: 'DANGER',
-            sublabel: 'Critical conditions - Evacuate immediately!',
+            label: t('danger'),
+            sublabel: t('dangerMessage'),
             bgClass: 'bg-red-500/10 border-red-500/30',
             textClass: 'text-red-400',
             iconBg: 'bg-red-500/20',
@@ -71,7 +74,7 @@ export function StatusIndicator({ status, currentLevel, currentFlow }: StatusInd
                     <div className="px-6 py-3 rounded-xl bg-gray-800/50 border border-gray-700">
                         <div className="flex items-center gap-2 mb-1">
                             <Droplets className="w-4 h-4 text-cyan-400" />
-                            <span className="text-gray-400 text-sm uppercase tracking-wide">Water Level</span>
+                            <span className="text-gray-400 text-sm uppercase tracking-wide">{t('waterLevel')}</span>
                         </div>
                         <div className={`text-3xl md:text-4xl font-bold ${config.textClass}`}>
                             {currentLevel.toFixed(2)}m
@@ -82,7 +85,7 @@ export function StatusIndicator({ status, currentLevel, currentFlow }: StatusInd
                     <div className="px-6 py-3 rounded-xl bg-gray-800/50 border border-gray-700">
                         <div className="flex items-center gap-2 mb-1">
                             <Waves className="w-4 h-4 text-blue-400" />
-                            <span className="text-gray-400 text-sm uppercase tracking-wide">Flow Rate</span>
+                            <span className="text-gray-400 text-sm uppercase tracking-wide">{t('flowRate')}</span>
                         </div>
                         <div className={`text-3xl md:text-4xl font-bold ${config.textClass}`}>
                             {currentFlow.toFixed(1)} m³/s

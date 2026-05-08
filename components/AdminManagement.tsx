@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAdmins, AdminData } from '@/hooks/useAdmins';
-import { sendPasswordResetEmail, getAuth } from 'firebase/auth';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { initializeFirebase } from '@/lib/firebase';
+import { useTranslation } from '@/context/LanguageContext';
 import {
     Users,
     UserPlus,
@@ -27,6 +28,7 @@ interface AdminManagementProps {
 }
 
 export function AdminManagement({ onLogEvent }: AdminManagementProps) {
+    const { t } = useTranslation();
     const { user, isSuperAdmin } = useAuth();
     const {
         admins,
@@ -57,7 +59,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
         try {
             const invited = inviteEmail;
             await inviteAdmin(inviteEmail, invitePassword);
-            setInviteSuccess(`Successfully invited ${invited}`);
+            setInviteSuccess(t('successfullyInvited', { email: invited }));
             setInviteEmail('');
             setInvitePassword('');
             setShowInviteForm(false);
@@ -112,7 +114,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
 
             await sendPasswordResetEmail(auth, user.email);
 
-            setResetSuccess(`Password reset email sent to your address (${user.email})`);
+            setResetSuccess(t('emailSent'));
             await onLogEvent?.(`${user.email} requested a password reset`, 'info');
             setTimeout(() => setResetSuccess(''), 5000);
         } catch (err) {
@@ -132,46 +134,13 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
         const diffHours = Math.floor(diffMs / 3600000);
         const diffDays = Math.floor(diffMs / 86400000);
 
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays < 7) return `${diffDays}d ago`;
+        if (diffMins < 1) return t('justNow');
+        if (diffMins < 60) return t('minutesAgo', { count: diffMins });
+        if (diffHours < 24) return t('hoursAgo', { count: diffHours });
+        if (diffDays < 7) return t('daysAgo', { count: diffDays });
         return date.toLocaleDateString();
     };
 
-    const getRoleBadge = (admin: AdminData) => {
-        if (admin.role === 'super_admin') {
-            return (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                    <Crown className="w-3 h-3" />
-                    Super Admin
-                </span>
-            );
-        }
-        return (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                <Shield className="w-3 h-3" />
-                Admin
-            </span>
-        );
-    };
-
-    const getStatusBadge = (admin: AdminData) => {
-        if (admin.disabled) {
-            return (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-red-500/15 text-red-400 border border-red-500/30">
-                    <Ban className="w-3 h-3" />
-                    Disabled
-                </span>
-            );
-        }
-        return (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                <CheckCircle className="w-3 h-3" />
-                Active
-            </span>
-        );
-    };
 
     // Skeleton helper
     const Skeleton = ({ className }: { className?: string }) => (
@@ -233,8 +202,8 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                 <div className="flex items-center gap-3">
                     <Users className="w-6 h-6 text-blue-400" />
                     <div>
-                        <h3 className="text-lg font-semibold text-white">Manage Admins</h3>
-                        <p className="text-[11px] text-gray-500">{admins.length} admin{admins.length !== 1 ? 's' : ''} registered</p>
+                        <h3 className="text-lg font-semibold text-white">{t('manageAdmins')}</h3>
+                        <p className="text-[11px] text-gray-500">{t('adminsRegistered', { count: admins.length, s: admins.length !== 1 ? 's' : '' })}</p>
                     </div>
                 </div>
 
@@ -248,12 +217,12 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                     {showInviteForm ? (
                         <>
                             <X className="w-4 h-4" />
-                            Cancel
+                            {t('cancel')}
                         </>
                     ) : (
                         <>
                             <UserPlus className="w-4 h-4" />
-                            Invite Admin
+                            {t('inviteAdmin')}
                         </>
                     )}
                 </button>
@@ -285,7 +254,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                 <form onSubmit={handleInvite} className="mb-6 p-4 rounded-lg bg-gray-900/50 border border-gray-700 space-y-4">
                     <h4 className="text-sm font-medium text-white flex items-center gap-2">
                         <UserPlus className="w-4 h-4 text-blue-400" />
-                        Invite New Admin
+                        {t('inviteNewAdmin')}
                     </h4>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -295,7 +264,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                             </div>
                             <input
                                 type="email"
-                                placeholder="Email address"
+                                placeholder={t('emailAddress')}
                                 value={inviteEmail}
                                 onChange={(e) => setInviteEmail(e.target.value)}
                                 required
@@ -308,7 +277,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                             </div>
                             <input
                                 type="password"
-                                placeholder="Temporary password"
+                                placeholder={t('temporaryPassword')}
                                 value={invitePassword}
                                 onChange={(e) => setInvitePassword(e.target.value)}
                                 required
@@ -320,7 +289,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
 
                     <div className="flex items-center justify-between">
                         <p className="text-gray-500 text-xs">
-                            Share the credentials with the new admin securely
+                            {t('shareCredentialsSecurely')}
                         </p>
                         <button
                             type="submit"
@@ -330,12 +299,12 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                             {inviteLoading ? (
                                 <>
                                     <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                                    Inviting...
+                                    {t('inviting')}
                                 </>
                             ) : (
                                 <>
                                     <UserPlus className="w-4 h-4" />
-                                    Send Invite
+                                    {t('sendInvite')}
                                 </>
                             )}
                         </button>
@@ -369,7 +338,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                         </div>
                                         <div>
                                             <p className="text-red-400 text-sm font-medium">
-                                                Remove admin?
+                                                {t('removeAdminConfirm')}
                                             </p>
                                             <p className="text-gray-500 text-xs truncate max-w-[200px]">
                                                 {admin.email}
@@ -381,7 +350,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                             onClick={() => setConfirmDelete(null)}
                                             className="px-3 py-1.5 rounded-lg bg-gray-700 text-gray-300 text-xs font-medium hover:bg-gray-600 transition-colors"
                                         >
-                                            Cancel
+                                            {t('cancel')}
                                         </button>
                                         <button
                                             onClick={() => handleRemove(admin.id)}
@@ -393,7 +362,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                             ) : (
                                                 <Trash2 className="w-3 h-3" />
                                             )}
-                                            Confirm
+                                            {t('confirm')}
                                         </button>
                                     </div>
                                 </div>
@@ -430,10 +399,10 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                                     <span>{formatLastAccess(admin.lastAccess)}</span>
                                                 </div>
                                                 <p className="text-[10px] text-gray-600">
-                                                    Added {admin.createdAt.toLocaleDateString()}
+                                                    {t('addedOn', { date: admin.createdAt.toLocaleDateString() })}
                                                 </p>
                                                 <p className="text-[10px] text-gray-600 truncate max-w-[100px]">
-                                                    by {admin.createdBy === 'System (existing account)' ? 'System' : admin.createdBy.split('@')[0]}
+                                                    {t('by')} {admin.createdBy === 'System (existing account)' ? 'System' : admin.createdBy.split('@')[0]}
                                                 </p>
                                             </div>
                                         </div>
@@ -444,7 +413,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                                 <button
                                                     onClick={() => handleToggleDisabled(admin.id, admin.disabled)}
                                                     disabled={actionLoading === admin.id}
-                                                    title={admin.disabled ? 'Enable admin' : 'Disable admin'}
+                                                    title={admin.disabled ? t('enableAdmin') : t('disableAdmin')}
                                                     className={`p-2.5 rounded-lg border transition-all duration-200 disabled:opacity-50 ${admin.disabled
                                                         ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
                                                         : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700 hover:text-white'
@@ -462,7 +431,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                                 <button
                                                     onClick={() => setConfirmDelete(admin.id)}
                                                     disabled={actionLoading === admin.id}
-                                                    title="Remove admin"
+                                                    title={t('removeAdminConfirm')}
                                                     className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all duration-200 disabled:opacity-50"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -479,7 +448,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                 {admins.length === 0 && (
                     <div className="text-center py-8">
                         <Users className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                        <p className="text-gray-500 text-sm">No admins found</p>
+                        <p className="text-gray-500 text-sm">{t('noAdminsFound')}</p>
                     </div>
                 )}
             </div>
@@ -492,7 +461,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <p className="text-gray-500 text-[11px] leading-relaxed">
-                                    Send password reset link to <strong>{user.email}</strong>
+                                    {t('sendPasswordResetTo', { email: user.email })}
                                 </p>
                             </div>
 
@@ -511,7 +480,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                 ) : (
                                     <KeyRound className="w-4 h-4" />
                                 )}
-                                {resetLoading ? 'Sending...' : resetSuccess ? 'Email Sent!' : 'Reset Password'}
+                                {resetLoading ? t('sending') : resetSuccess ? t('emailSent') : t('resetPassword')}
                             </button>
                         </div>
                     </div>
@@ -524,7 +493,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                             <Shield className="w-4 h-4 text-amber-500" />
                         </div>
                         <p className="text-gray-500 text-xs leading-relaxed">
-                            <span className="text-amber-500/80 font-medium">Standard Admin Access:</span> You can view team members but only Super Admins can manage account status or removals.
+                            <span className="text-amber-500/80 font-medium">{t('standardAdminAccess')}:</span> {t('standardAdminAccessDesc')}
                         </p>
                     </div>
                 )}

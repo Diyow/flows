@@ -3,6 +3,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart, Legend } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { WaterReading } from '@/hooks/useWaterData';
+import { useTranslation } from '@/context/LanguageContext';
 
 interface WaterLevelChartProps {
     data: WaterReading[];
@@ -17,8 +18,10 @@ export function WaterLevelChart({
     dangerLevel,
     showFlow = true
 }: WaterLevelChartProps) {
+    const { t, language } = useTranslation();
+
     const chartData = data.map((reading) => ({
-        time: reading.timestamp.toLocaleTimeString('en-US', {
+        time: reading.timestamp.toLocaleTimeString(language === 'id' ? 'id-ID' : 'en-US', {
             hour: '2-digit',
             minute: '2-digit',
             hour12: false
@@ -49,7 +52,7 @@ export function WaterLevelChart({
                     <p className="text-gray-400 text-sm mb-2">{label}</p>
                     {payload.map((entry, index) => (
                         <p key={index} className="font-bold" style={{ color: entry.color }}>
-                            {entry.dataKey === 'level' ? 'Level: ' : 'Flow: '}
+                            {entry.dataKey === 'level' ? `${t('waterLevel')}: ` : `${t('flowRate')}: `}
                             {entry.value.toFixed(entry.dataKey === 'level' ? 2 : 1)}
                             {entry.dataKey === 'level' ? 'm' : ' m³/s'}
                         </p>
@@ -64,7 +67,7 @@ export function WaterLevelChart({
         <div className="h-full p-6 rounded-2xl bg-gray-800/50 border border-gray-700">
             <div className="flex items-center gap-2 mb-6">
                 <TrendingUp className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-lg font-semibold text-white">24-Hour History</h3>
+                <h3 className="text-lg font-semibold text-white">{t('hourHistory')}</h3>
             </div>
 
             <div className="h-64 md:h-80">
@@ -122,7 +125,7 @@ export function WaterLevelChart({
                             yAxisId="level"
                             type="monotone"
                             dataKey="level"
-                            name="Water Level (m)"
+                            name={`${t('waterLevel')} (m)`}
                             stroke="#06b6d4"
                             strokeWidth={2}
                             dot={false}
@@ -136,8 +139,8 @@ export function WaterLevelChart({
                                 yAxisId="flow"
                                 type="monotone"
                                 dataKey="flow"
-                                name="Flow Rate (m³/s)"
-                                stroke="#8b5cf6"
+                                name={`${t('flowRate')} (m³/s)`}
+                                stroke="#3b82f6"
                                 strokeWidth={2}
                                 dot={false}
                                 activeDot={{ r: 4 }}
@@ -151,21 +154,21 @@ export function WaterLevelChart({
             <div className="mt-4 flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-cyan-500" />
-                    <span className="text-gray-400">Water Level</span>
+                    <span className="text-gray-400">{t('waterLevel')}</span>
                 </div>
                 {showFlow && (
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-purple-500" />
-                        <span className="text-gray-400">Flow Rate</span>
+                        <div className="w-3 h-3 rounded-full bg-blue-500" />
+                        <span className="text-gray-400">{t('flowRate')}</span>
                     </div>
                 )}
                 <div className="flex items-center gap-2">
                     <div className="w-6 h-0.5 bg-amber-500" style={{ borderStyle: 'dashed' }} />
-                    <span className="text-gray-400">Warning ({warningLevel}m)</span>
+                    <span className="text-gray-400">{t('warning')} ({warningLevel}m)</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-6 h-0.5 bg-red-500" style={{ borderStyle: 'dashed' }} />
-                    <span className="text-gray-400">Danger ({dangerLevel}m)</span>
+                    <span className="text-gray-400">{t('danger')} ({dangerLevel}m)</span>
                 </div>
             </div>
         </div>

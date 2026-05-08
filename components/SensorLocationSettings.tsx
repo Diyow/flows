@@ -5,6 +5,7 @@ import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { MapPin, Save, RotateCcw, Crosshair } from 'lucide-react';
 import { doc, setDoc, Firestore } from 'firebase/firestore';
 import { useWaterDataContext } from '@/context/WaterDataContext';
+import { useTranslation } from '@/context/LanguageContext';
 
 interface SensorLocationSettingsProps {
     firebaseDb: Firestore | null;
@@ -43,6 +44,7 @@ const mapOptions: google.maps.MapOptions = {
 };
 
 export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: SensorLocationSettingsProps) {
+    const { t } = useTranslation();
     // Use centralized sensor location from context (no duplicate Firestore listener)
     const { sensorLocation } = useWaterDataContext();
     const [location, setLocation] = useState(sensorLocation);
@@ -102,7 +104,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
             await onLogEvent?.(
-                `${adminEmail ?? 'Admin'} updated sensor location — "${editLocation.name}" (${editLocation.lat}, ${editLocation.lng})`,
+                `${adminEmail ?? t('admin')} updated sensor location — "${editLocation.name}" (${editLocation.lat}, ${editLocation.lng})`,
                 'info'
             );
         } catch (error) {
@@ -128,10 +130,10 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
             {/* Header */}
             <div className="flex items-center gap-2 mb-6">
                 <MapPin className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-lg font-semibold text-white">Sensor Location</h3>
+                <h3 className="text-lg font-semibold text-white">{t('sensorLocation')}</h3>
                 {hasChanges && (
                     <span className="ml-auto text-xs text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full">
-                        Unsaved changes
+                        {t('unsavedChanges')}
                     </span>
                 )}
             </div>
@@ -162,7 +164,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
                     </GoogleMap>
                     <div className="bg-gray-900/80 px-3 py-2 text-xs text-gray-400 flex items-center gap-1.5">
                         <Crosshair className="w-3 h-3 text-emerald-400" />
-                        Click on the map or drag the marker to set sensor location
+                        {t('mapInstructions')}
                     </div>
                 </div>
             ) : (
@@ -170,8 +172,8 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
                     <MapPin className="w-10 h-10 text-gray-600 mx-auto mb-3" />
                     <p className="text-gray-500 text-sm">
                         {!apiKey || apiKey === 'your_google_maps_key'
-                            ? 'Google Maps API key not configured. Enter coordinates manually below.'
-                            : 'Loading map...'}
+                            ? t('mapNotConfigured')
+                            : t('loadingMap')}
                     </p>
                 </div>
             )}
@@ -179,13 +181,13 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
             {/* Location Name */}
             <div className="mb-5">
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                    Location Name
+                    {t('locationName')}
                 </label>
                 <input
                     type="text"
                     value={editLocation.name}
                     onChange={(e) => setEditLocation(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g. Denpasar, Sidakarya"
+                    placeholder={t('locationPlaceholder')}
                     className="w-full px-4 py-3 bg-gray-900/70 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
                 />
             </div>
@@ -194,7 +196,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
             <div className="grid grid-cols-2 gap-4 mb-5">
                 <div>
                     <label className="block text-sm font-medium text-gray-400 mb-2">
-                        Latitude
+                        {t('latitude')}
                     </label>
                     <input
                         type="number"
@@ -212,7 +214,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-400 mb-2">
-                        Longitude
+                        {t('longitude')}
                     </label>
                     <input
                         type="number"
@@ -233,7 +235,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
             {/* Current saved location display */}
             {location.name && (
                 <div className="mb-5 p-3 bg-gray-900/50 border border-gray-700/50 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-1">Current saved location</p>
+                    <p className="text-xs text-gray-500 mb-1">{t('currentSavedLocation')}</p>
                     <p className="text-sm text-gray-300">
                         {location.name}{' '}
                         <span className="text-gray-500 font-mono text-xs">
@@ -251,7 +253,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
                     className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-gray-400 bg-gray-700/30 border border-gray-700 hover:bg-gray-700/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                     <RotateCcw className="w-4 h-4" />
-                    Reset
+                    {t('reset')}
                 </button>
                 <button
                     onClick={handleSave}
@@ -262,7 +264,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
                         } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
                     <Save className="w-4 h-4" />
-                    {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Location'}
+                    {saving ? t('saving') : saved ? t('saved') : t('saveLocation')}
                 </button>
             </div>
         </div>

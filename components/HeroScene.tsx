@@ -27,7 +27,7 @@
 
 'use client'; // Required: Three.js only works in the browser, not on the server
 
-import { Suspense, useRef, useMemo, useEffect } from 'react';
+import { Suspense, useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber';
 import {
   useGLTF,        // Hook to load .gltf/.glb 3D models
@@ -38,6 +38,7 @@ import {
 } from '@react-three/drei';
 import * as THREE from 'three';
 import { Water2 } from 'three-stdlib';
+import { useTranslation } from '@/context/LanguageContext';
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────
 
@@ -77,7 +78,12 @@ function CustomWater({ waterNode, depthBuffer }: any) {
     normalMap1.wrapS = normalMap1.wrapT = THREE.RepeatWrapping;
   }, [normalMap0, normalMap1]);
 
-  const water = useMemo(() => {
+  const [water, setWater] = useState<Water2 | null>(null);
+
+  useEffect(() => {
+    if (!waterNode || !waterNode.geometry) return;
+
+    // 1. Prepare Geometry
     waterNode.geometry.computeBoundingBox();
     const sizeVec = new THREE.Vector3();
     waterNode.geometry.boundingBox.getSize(sizeVec);
@@ -90,8 +96,7 @@ function CustomWater({ waterNode, depthBuffer }: any) {
     geom.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
     geom.translate(centerVec.x, centerVec.y, centerVec.z);
 
-    // 1. Generate world-space planar UVs to guarantee perfect ripples
-    // We do this BEFORE altering the geometry, using the node's true world matrix
+    // Generate world-space planar UVs to guarantee perfect ripples
     waterNode.updateMatrixWorld(true);
     const uvAttribute = geom.attributes.uv;
     const posAttribute = geom.attributes.position;
@@ -99,17 +104,18 @@ function CustomWater({ waterNode, depthBuffer }: any) {
       const v = new THREE.Vector3();
       for (let i = 0; i < uvAttribute.count; i++) {
         v.fromBufferAttribute(posAttribute, i);
-        v.applyMatrix4(waterNode.matrixWorld); // Get actual physical world coordinates
-        uvAttribute.setXY(i, v.x * 0.3, v.z * 0.3); // 0.3 tiles per world unit
+        v.applyMatrix4(waterNode.matrixWorld);
+        uvAttribute.setXY(i, v.x * 0.3, v.z * 0.3);
       }
       uvAttribute.needsUpdate = true;
     }
 
-    // 2. Move geometry to XY plane (Reflector requires this)
+    // Move geometry to XY plane (Reflector requirement)
     geom.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI / 2));
     geom.computeBoundingBox();
     geom.computeBoundingSphere();
 
+    // 2. Create Water Instance
     const w = new Water2(geom, {
       color: '#67e8f9',
       scale: 1,
@@ -120,48 +126,34 @@ function CustomWater({ waterNode, depthBuffer }: any) {
       normalMap1,
     });
 
-    // Make absolutely sure water doesn't render into the depth buffer itself
     w.material.depthWrite = false;
 
-    // --- CUSTOM DEPTH-FADE FOAM SHADER & VERTEX WAVES ---
+    // 3. Custom Shaders
     w.material.onBeforeCompile = (shader) => {
       uniformsRef.current = shader.uniforms;
-
-      // 1. Pass uniforms to the shader
       shader.uniforms.tDepth = { value: depthBuffer };
       shader.uniforms.cameraNear = { value: camera.near };
       shader.uniforms.cameraFar = { value: camera.far };
-      shader.uniforms.uTime = { value: 0 }; // Used for vertex waves
-      // Multiply logical size by device pixel ratio to get exact physical pixels on retina screens
+      shader.uniforms.uTime = { value: 0 };
       shader.uniforms.screenSize = { value: new THREE.Vector2(size.width * dpr, size.height * dpr) };
 
-      // --- VERTEX SHADER INJECTION (Physical Waves) ---
       shader.vertexShader = `
         uniform float uTime;
         ${shader.vertexShader}
-      `;
-
-      shader.vertexShader = shader.vertexShader.replace(
+      `.replace(
         'void main() {',
         `
         void main() {
           vec3 displacedPos = position;
-          // The Reflector requires the geometry to be on the XY plane, so Z is the "up/down" height.
-          // Add complex overlapping sine waves to physically bob the water up and down!
-          // Toned down frequency and height to simulate a gentle river instead of a choppy sea
           float wave1 = sin(position.x * 1.0 + uTime * 0.8) * 0.015;
           float wave2 = cos(position.y * 2.0 - uTime * 0.5) * 0.01;
           displacedPos.z += wave1 + wave2;
         `
-      );
-
-      // Replace all usage of the original position with our physically displaced position
-      shader.vertexShader = shader.vertexShader.replace(
+      ).replace(
         /vec4\( position, 1\.0 \)/g,
         'vec4( displacedPos, 1.0 )'
       );
 
-      // 2. Inject uniform definitions into the fragment shader header
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <logdepthbuf_pars_fragment>',
         `
@@ -172,56 +164,54 @@ function CustomWater({ waterNode, depthBuffer }: any) {
         uniform float cameraFar;
         uniform vec2 screenSize;
         `
-      );
-
-      // 3. Intercept the final color calculation to mix in the foam and create a jagged shoreline
-      shader.fragmentShader = shader.fragmentShader.replace(
+      ).replace(
         'gl_FragColor = vec4( color, 1.0 ) * mix( refractColor, reflectColor, reflectance );',
         `
         vec4 waterBaseColor = vec4( color, 1.0 ) * mix( refractColor, reflectColor, reflectance );
         
-        // Calculate screen UVs to sample the depth texture
         vec2 screenUv = gl_FragCoord.xy / screenSize;
-        float sceneZ = texture2D(tDepth, screenUv).x;
         
-        // Convert raw Z values to linear view distances (how far away they are from the camera in meters)
+        // Safety check for depth texture
+        float sceneZ = 1.0;
+        #ifdef USE_DEPTH_TEXTURE
+          sceneZ = texture2D(tDepth, screenUv).x;
+        #endif
+        
         float viewZScene = perspectiveDepthToViewZ( sceneZ, cameraNear, cameraFar );
         float viewZWater = perspectiveDepthToViewZ( gl_FragCoord.z, cameraNear, cameraFar );
-        
-        // The difference is how deep the water is at this exact pixel
         float depthDiff = abs(viewZScene - viewZWater);
-        
-        // Generate moving noise using the water's built-in animated normal maps
-        float noise = normalColor.r * 2.0 - 1.0; // Rippling values from -1 to 1
-        
-        // --- ORGANIC CRASHING FOAM ---
-        // Distort the depth distance using noise so the foam band is jagged and turbulent
+        float noise = normalColor.r * 2.0 - 1.0;
         float distortedDepth = depthDiff + noise * 0.15;
-        
-        // Calculate foam intensity (1.0 at the shore, fading to 0.0 in deep water)
-        // Reduced thickness so foam stays tight against the shoreline
         float foamThickness = 0.25;
         float foamFactor = 1.0 - smoothstep(0.0, foamThickness, distortedDepth);
-        
-        // Heavily lessen the intensity so the foam is very subtle and translucent
         foamFactor = clamp(foamFactor * 0.4, 0.0, 1.0);
-        
-        // Use a softer, darker cyan/blue foam color instead of bright white
         vec3 foamColor = vec3(0.4, 0.8, 0.9);
         gl_FragColor = mix(waterBaseColor, vec4(foamColor, 1.0), foamFactor);
         `
       );
+
+      // Define USE_DEPTH_TEXTURE if depthBuffer is available
+      if (depthBuffer) {
+        shader.defines = shader.defines || {};
+        shader.defines.USE_DEPTH_TEXTURE = '';
+      }
     };
 
-    // 3. Counter-rotate the mesh by -90 on X so it returns to the XZ plane
     w.rotation.set(-Math.PI / 2, 0, 0);
-
-    // 4. Lift slightly in LOCAL space to prevent Z-fighting with the riverbed
     w.position.set(0, 0, 0.05);
 
-    return w;
-  }, [waterNode, normalMap0, normalMap1, depthBuffer, camera, size]);
+    setWater(w);
 
+    // Cleanup logic: Critical for preventing memory leaks
+    return () => {
+      geom.dispose();
+      w.material.dispose();
+      // Water2 doesn't have a simple dispose, but disposing its resources is usually enough
+      setWater(null);
+    };
+  }, [waterNode, normalMap0, normalMap1, depthBuffer, camera, size, dpr]);
+
+  if (!water) return null;
   return <primitive object={water} />;
 }
 
@@ -243,6 +233,8 @@ function RiverModel() {
   }, [nodes, set]);
 
   const waterNode = nodes.Water_Placeholder as THREE.Mesh;
+
+  if (!nodes || !scene) return null;
 
   return (
     <>
@@ -397,25 +389,27 @@ interface HeroSceneProps {
 }
 
 export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps) {
+  const { t } = useTranslation();
+
   // Color/text config for each status level
   const statusConfig = {
     safe: {
-      label: 'SAFE',
-      sublabel: 'Water levels and flow are normal',
+      label: t('safe'),
+      sublabel: t('safeMessage'),
       color: 'text-emerald-400',
       border: 'border-emerald-500/30',
       dot: 'bg-emerald-400',
     },
     warning: {
-      label: 'WARNING',
-      sublabel: 'Elevated readings detected — Stay alert',
+      label: t('warning'),
+      sublabel: t('warningMessage'),
       color: 'text-amber-400',
       border: 'border-amber-500/30',
       dot: 'bg-amber-400',
     },
     danger: {
-      label: 'DANGER',
-      sublabel: 'Critical conditions — Evacuate immediately!',
+      label: t('danger'),
+      sublabel: t('dangerMessage'),
       color: 'text-red-400',
       border: 'border-red-500/30',
       dot: 'bg-red-400',
@@ -487,11 +481,10 @@ export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps)
       <div className="absolute inset-0 flex flex-col items-center justify-end pb-10 md:pb-14 pointer-events-none">
         <div className="flex flex-col items-center gap-3 animate-fade-in">
 
-          {/* "Live Monitoring" badge with pulsing dot */}
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-gray-900/70 border border-gray-700/50 backdrop-blur-sm">
             <span className={`w-2 h-2 rounded-full ${cfg.dot} animate-pulse`} />
             <span className="text-xs text-gray-400 uppercase tracking-widest font-medium">
-              Live Monitoring
+              {t('liveMonitoring')}
             </span>
           </div>
 
@@ -511,21 +504,20 @@ export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps)
           </h2>
           <p className="text-gray-400 text-sm md:text-base">{cfg.sublabel}</p>
 
-          {/* Sensor reading pills */}
           <div className="flex flex-wrap justify-center gap-3 mt-2 pointer-events-auto">
             <div className={`px-5 py-2.5 rounded-xl bg-gray-900/70 backdrop-blur-md border ${cfg.border} flex items-center gap-3`}>
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-gray-500">Water Level</span>
+                <span className="text-[10px] uppercase tracking-wider text-gray-500">{t('waterLevel')}</span>
                 <span className={`text-xl font-bold ${cfg.color}`}>
-                  {currentLevel.toFixed(2)}m
+                  {(currentLevel || 0).toFixed(2)}m
                 </span>
               </div>
             </div>
             <div className={`px-5 py-2.5 rounded-xl bg-gray-900/70 backdrop-blur-md border ${cfg.border} flex items-center gap-3`}>
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-gray-500">Flow Rate</span>
+                <span className="text-[10px] uppercase tracking-wider text-gray-500">{t('flowRate')}</span>
                 <span className={`text-xl font-bold ${cfg.color}`}>
-                  {currentFlow.toFixed(1)} m³/s
+                  {(currentFlow || 0).toFixed(1)} m³/s
                 </span>
               </div>
             </div>

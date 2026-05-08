@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Save, RotateCcw } from 'lucide-react';
 import { ThresholdSettings } from '@/hooks/useWaterData';
+import { useTranslation } from '@/context/LanguageContext';
 
 interface ThresholdControlsProps {
     settings: ThresholdSettings;
@@ -12,6 +13,7 @@ interface ThresholdControlsProps {
 }
 
 export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }: ThresholdControlsProps) {
+    const { t } = useTranslation();
     const [warningLevel, setWarningLevel] = useState(settings.warningLevel);
     const [dangerLevel, setDangerLevel] = useState(settings.dangerLevel);
     const [saving, setSaving] = useState(false);
@@ -30,7 +32,7 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
             await onLogEvent?.(
-                `${adminEmail ?? 'Admin'} updated thresholds — Warning: ${warningLevel.toFixed(1)}m, Danger: ${dangerLevel.toFixed(1)}m`,
+                `${adminEmail ?? t('admin')} updated thresholds — ${t('warningLevel')}: ${warningLevel.toFixed(1)}m, ${t('dangerLevel')}: ${dangerLevel.toFixed(1)}m`,
                 'info'
             );
         } catch (error) {
@@ -51,18 +53,18 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }
         <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
             <div className="flex items-center gap-2 mb-6">
                 <Settings className="w-5 h-5 text-blue-400" />
-                <h3 className="text-lg font-semibold text-white">Threshold Settings</h3>
+                <h3 className="text-lg font-semibold text-white">{t('thresholdSettings')}</h3>
             </div>
 
             <div className="flex-1 space-y-6">
                 {/* Water Level Section */}
                 <div className="pb-4 border-b border-gray-700">
-                    <h4 className="text-sm font-medium text-cyan-400 mb-4">Water Level Thresholds</h4>
+                    <h4 className="text-sm font-medium text-cyan-400 mb-4">{t('waterLevelThresholds')}</h4>
 
                     {/* Warning Level */}
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-400 mb-2">
-                            Warning Level (meters)
+                            {t('warningLevel')} (meters)
                         </label>
                         <div className="flex items-center gap-4">
                             <input
@@ -83,7 +85,7 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }
                     {/* Danger Level */}
                     <div>
                         <label className="block text-sm font-medium text-gray-400 mb-2">
-                            Danger Level (meters)
+                            {t('dangerLevel')} (meters)
                         </label>
                         <div className="flex items-center gap-4">
                             <input
@@ -106,7 +108,7 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }
                 {hasValidation && (
                     <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
                         <p className="text-red-400 text-sm">
-                            ⚠️ Warning thresholds must be lower than danger thresholds
+                            ⚠️ {t('warningsLowerThanDanger')}
                         </p>
                     </div>
                 )}
@@ -120,7 +122,7 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }
                     className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-gray-400 bg-gray-700/30 border border-gray-700 hover:bg-gray-700/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                     <RotateCcw className="w-4 h-4" />
-                    Reset
+                    {t('reset')}
                 </button>
                 <button
                     onClick={handleSave}
@@ -131,7 +133,7 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }
                         } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
                     <Save className="w-4 h-4" />
-                    {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
+                    {saving ? t('saving') : saved ? t('saved') : t('saveChanges')}
                 </button>
             </div>
         </div>

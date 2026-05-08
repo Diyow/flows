@@ -11,6 +11,7 @@ import {
     Firestore,
 } from 'firebase/firestore';
 import { ThresholdSettings, WaterReading } from '@/hooks/useWaterData';
+import { useTranslation } from '@/context/LanguageContext';
 import {
     Database,
     Calendar,
@@ -59,16 +60,6 @@ function getExportBucketMs(startDate: Date, endDate: Date): number | null {
 }
 
 /**
- * Return a human-readable label for the bucket size.
- */
-function getBucketLabel(startDate: Date, endDate: Date): string {
-    const bucketMs = getExportBucketMs(startDate, endDate);
-    if (bucketMs === null) return 'Raw (no averaging)';
-    const minutes = bucketMs / 60_000;
-    return `${minutes} min averages`;
-}
-
-/**
  * Downsample readings into time-based buckets by averaging.
  */
 function downsampleForExport(
@@ -113,6 +104,7 @@ function toDatetimeLocal(date: Date): string {
 }
 
 export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }: HistoricalDataProps) {
+    const { t } = useTranslation();
     // Default range: last 7 days
     const [startDate, setStartDate] = useState<string>(() => {
         const d = new Date();
@@ -139,6 +131,16 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
         },
         [settings]
     );
+
+    /**
+     * Return a human-readable label for the bucket size.
+     */
+    const getBucketLabel = useCallback((startDate: Date, endDate: Date): string => {
+        const bucketMs = getExportBucketMs(startDate, endDate);
+        if (bucketMs === null) return t('rawAverages');
+        const minutes = bucketMs / 60_000;
+        return t('minAverages', { count: minutes });
+    }, [t]);
 
     // Downsampled data with status
     const processedData: DownsampledReading[] = useMemo(() => {
@@ -174,7 +176,7 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
             dangerPercent: ((dangerCount / processedData.length) * 100).toFixed(1),
             bucketLabel: getBucketLabel(new Date(startDate), new Date(endDate)),
         };
-    }, [processedData, rawCount, startDate, endDate]);
+    }, [processedData, rawCount, startDate, endDate, getBucketLabel]);
 
     // Pagination
     const totalPages = Math.ceil(processedData.length / ROWS_PER_PAGE);
@@ -256,16 +258,16 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
     const handleExportCSV = useCallback(() => {
         if (processedData.length === 0) return;
 
-        const headers = 'Timestamp,Water Level (m),Flow Rate (m³/s),Status';
+        const headers = `${t('timestamp')},${t('waterLevel')} (m),${t('flowRate')} (m³/s),${t('status')}`;
         const rows = processedData.map((r) => {
             const ts = r.timestamp.toISOString();
-            return `${ts},${r.level},${r.flow},${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`;
+            return `${ts},${r.level},${r.flow},${t(r.status as any)}`;
         });
 
         const csv = [headers, ...rows].join('\n');
         downloadFile(csv, `flows_readings_${formatFilenameDate(new Date(startDate))}_to_${formatFilenameDate(new Date(endDate))}.csv`, 'text/csv');
-        onLogEvent?.(`${adminEmail ?? 'Admin'} exported historical data as CSV (${processedData.length} records)`, 'info');
-    }, [processedData, startDate, endDate, onLogEvent, adminEmail]);
+        onLogEvent?.(`${adminEmail ?? t('admin')} exported historical data as CSV (${processedData.length} records)`, 'info');
+    }, [processedData, startDate, endDate, onLogEvent, adminEmail, t]);
 
     // Export as JSON
     const handleExportJSON = useCallback(() => {
@@ -294,15 +296,15 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
 
         const json = JSON.stringify(exportData, null, 2);
         downloadFile(json, `flows_readings_${formatFilenameDate(new Date(startDate))}_to_${formatFilenameDate(new Date(endDate))}.json`, 'application/json');
-        onLogEvent?.(`${adminEmail ?? 'Admin'} exported historical data as JSON (${processedData.length} records)`, 'info');
-    }, [processedData, startDate, endDate, settings, rawCount, onLogEvent, adminEmail]);
+        onLogEvent?.(`${adminEmail ?? t('admin')} exported historical data as JSON (${processedData.length} records)`, 'info');
+    }, [processedData, startDate, endDate, settings, rawCount, onLogEvent, adminEmail, getBucketLabel, t]);
 
     // Status badge component
     const StatusBadge = ({ status }: { status: 'safe' | 'warning' | 'danger' }) => {
         const config = {
-            safe: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30', label: 'Safe' },
-            warning: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30', label: 'Warning' },
-            danger: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', label: 'Danger' },
+            safe: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30', label: t('safe') },
+            warning: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30', label: t('warning') },
+            danger: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', label: t('danger') },
         }[status];
 
         return (
@@ -360,7 +362,7 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
             {/* Header */}
             <div className="flex items-center gap-2 mb-6">
                 <Database className="w-5 h-5 text-blue-400" />
-                <h3 className="text-lg font-semibold text-white">Historical Data & Export</h3>
+                <h3 className="text-lg font-semibold text-white">{t('historicalDataAndExport')}</h3>
             </div>
 
             {/* Date Range Picker */}
@@ -368,7 +370,7 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
                 <div className="flex-1 min-w-0">
                     <label className="block text-sm text-gray-400 mb-1.5">
                         <Calendar className="w-3.5 h-3.5 inline mr-1" />
-                        Start Date
+                        {t('startDate')}
                     </label>
                     <input
                         type="datetime-local"
@@ -383,7 +385,7 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
                 <div className="flex-1 min-w-0">
                     <label className="block text-sm text-gray-400 mb-1.5">
                         <Calendar className="w-3.5 h-3.5 inline mr-1" />
-                        End Date
+                        {t('endDate')}
                     </label>
                     <input
                         type="datetime-local"
@@ -403,14 +405,13 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
                     ) : (
                         <Search className="w-4 h-4" />
                     )}
-                    {isLoading ? 'Loading...' : 'Load Data'}
+                    {isLoading ? t('loading') : t('loadData')}
                 </button>
             </div>
 
             {/* Range info */}
             <p className="text-xs text-gray-500 mb-4 -mt-3">
-                Max range: {MAX_RANGE_DAYS} days • Data will be shown as{' '}
-                <span className="text-gray-400">{getBucketLabel(new Date(startDate), new Date(endDate))}</span>
+                {t('maxRangeDays', { count: MAX_RANGE_DAYS })} • {t('dataShownAs', { label: getBucketLabel(new Date(startDate), new Date(endDate)) })}
             </p>
 
             {/* Error message */}
@@ -425,8 +426,8 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
             {!hasLoaded && !isLoading && !error && (
                 <div className="text-center py-12 text-gray-500">
                     <Database className="w-10 h-10 mx-auto mb-3 opacity-40 text-blue-400" />
-                    <p className="text-sm">Select a date range and click <span className="text-blue-400 font-medium">Load Data</span> to view historical readings.</p>
-                    <p className="text-xs mt-1 text-gray-600">Data is fetched on-demand to minimize Firestore usage.</p>
+                    <p className="text-sm">{t('selectDateRangePrompt')}</p>
+                    <p className="text-xs mt-1 text-gray-600">{t('dataFetchedOnDemand')}</p>
                 </div>
             )}
 
@@ -449,18 +450,18 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
                                     <div className="p-3 rounded-lg bg-gray-900/40 border border-gray-700/50">
                                         <div className="flex items-center gap-1.5 mb-1">
                                             <BarChart3 className="w-3.5 h-3.5 text-blue-400" />
-                                            <span className="text-xs text-gray-500">Records</span>
+                                            <span className="text-xs text-gray-500">{t('records')}</span>
                                         </div>
                                         <p className="text-lg font-bold text-white">{stats.totalRecords.toLocaleString()}</p>
                                         {stats.rawRecords !== stats.totalRecords && (
-                                            <p className="text-xs text-gray-600">{stats.rawRecords.toLocaleString()} raw</p>
+                                            <p className="text-xs text-gray-600">{stats.rawRecords.toLocaleString()} {t('rawRecords')}</p>
                                         )}
                                     </div>
 
                                     <div className="p-3 rounded-lg bg-gray-900/40 border border-gray-700/50">
                                         <div className="flex items-center gap-1.5 mb-1">
                                             <Clock className="w-3.5 h-3.5 text-blue-400" />
-                                            <span className="text-xs text-gray-500">Resolution</span>
+                                            <span className="text-xs text-gray-500">{t('resolution')}</span>
                                         </div>
                                         <p className="text-sm font-bold text-white">{stats.bucketLabel}</p>
                                     </div>
@@ -468,7 +469,7 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
                                     <div className="p-3 rounded-lg bg-gray-900/40 border border-gray-700/50">
                                         <div className="flex items-center gap-1.5 mb-1">
                                             <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                                            <span className="text-xs text-gray-500">Max Level</span>
+                                            <span className="text-xs text-gray-500">{t('maxLevel')}</span>
                                         </div>
                                         <p className="text-lg font-bold text-white">{stats.maxLevel.toFixed(2)}m</p>
                                         <p className="text-xs text-gray-600">min: {stats.minLevel.toFixed(2)}m</p>
@@ -477,7 +478,7 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
                                     <div className="p-3 rounded-lg bg-gray-900/40 border border-gray-700/50">
                                         <div className="flex items-center gap-1.5 mb-1">
                                             <Droplets className="w-3.5 h-3.5 text-blue-400" />
-                                            <span className="text-xs text-gray-500">Avg Flow</span>
+                                            <span className="text-xs text-gray-500">{t('avgFlow')}</span>
                                         </div>
                                         <p className="text-lg font-bold text-white">{stats.avgFlow.toFixed(1)}</p>
                                         <p className="text-xs text-gray-600">m³/s</p>
@@ -486,19 +487,19 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
                                     <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
                                         <div className="flex items-center gap-1.5 mb-1">
                                             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                                            <span className="text-xs text-gray-500">Warning</span>
+                                            <span className="text-xs text-gray-500">{t('warning')}</span>
                                         </div>
                                         <p className="text-lg font-bold text-amber-400">{stats.warningPercent}%</p>
-                                        <p className="text-xs text-gray-600">of readings</p>
+                                        <p className="text-xs text-gray-600">{t('ofReadings')}</p>
                                     </div>
 
                                     <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
                                         <div className="flex items-center gap-1.5 mb-1">
                                             <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                                            <span className="text-xs text-gray-500">Danger</span>
+                                            <span className="text-xs text-gray-500">{t('danger')}</span>
                                         </div>
                                         <p className="text-lg font-bold text-red-400">{stats.dangerPercent}%</p>
-                                        <p className="text-xs text-gray-600">of readings</p>
+                                        <p className="text-xs text-gray-600">{t('ofReadings')}</p>
                                     </div>
                                 </div>
                             )}
@@ -508,10 +509,10 @@ export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }:
                                 <table className="w-full">
                                     <thead>
                                         <tr className="bg-gray-900/40">
-                                            <th className="text-left py-3 px-4 text-gray-400 text-sm font-medium">Timestamp</th>
-                                            <th className="text-right py-3 px-4 text-gray-400 text-sm font-medium">Water Level (m)</th>
-                                            <th className="text-right py-3 px-4 text-gray-400 text-sm font-medium">Flow Rate (m³/s)</th>
-                                            <th className="text-center py-3 px-4 text-gray-400 text-sm font-medium">Status</th>
+                                            <th className="text-left py-3 px-4 text-gray-400 text-sm font-medium">{t('timestamp')}</th>
+                                            <th className="text-right py-3 px-4 text-gray-400 text-sm font-medium">{t('waterLevel')} (m)</th>
+                                            <th className="text-right py-3 px-4 text-gray-400 text-sm font-medium">{t('flowRate')} (m³/s)</th>
+                                            <th className="text-center py-3 px-4 text-gray-400 text-sm font-medium">{t('status')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>

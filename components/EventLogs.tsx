@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ScrollText, AlertCircle, Info, AlertTriangle, Filter } from 'lucide-react';
 import { LogEntry } from '@/hooks/useWaterData';
+import { useTranslation } from '@/context/LanguageContext';
 
 interface EventLogsProps {
     logs: LogEntry[];
@@ -11,6 +12,7 @@ interface EventLogsProps {
 type FilterType = 'all' | 'info' | 'warning' | 'danger' | 'alerts';
 
 export function EventLogs({ logs }: EventLogsProps) {
+    const { t } = useTranslation();
     const [filter, setFilter] = useState<FilterType>('all');
 
     const filteredLogs = logs.filter(log => {
@@ -25,14 +27,14 @@ export function EventLogs({ logs }: EventLogsProps) {
                 return (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-medium">
                         <AlertCircle className="w-3 h-3" />
-                        Critical
+                        {t('critical')}
                     </span>
                 );
             case 'warning':
                 return (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium">
                         <AlertTriangle className="w-3 h-3" />
-                        Warning
+                        {t('alert')}
                     </span>
                 );
             case 'info':
@@ -40,7 +42,7 @@ export function EventLogs({ logs }: EventLogsProps) {
                 return (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">
                         <Info className="w-3 h-3" />
-                        Info
+                        {t('info')}
                     </span>
                 );
         }
@@ -51,7 +53,7 @@ export function EventLogs({ logs }: EventLogsProps) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                 <div className="flex items-center gap-2">
                     <ScrollText className="w-5 h-5 text-blue-400" />
-                    <h3 className="text-lg font-semibold text-white">Event Logs</h3>
+                    <h3 className="text-lg font-semibold text-white">{t('eventLogs')}</h3>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -64,11 +66,11 @@ export function EventLogs({ logs }: EventLogsProps) {
                             onChange={(e) => setFilter(e.target.value as FilterType)}
                             className="pl-9 pr-8 py-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-gray-300 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 appearance-none cursor-pointer hover:bg-gray-900 transition-all"
                         >
-                            <option value="all">All Events</option>
-                            <option value="info">Info Only</option>
-                            <option value="warning">Warnings Only</option>
-                            <option value="danger">Critical Only</option>
-                            <option value="alerts">Warnings & Criticals</option>
+                            <option value="all">{t('allEvents')}</option>
+                            <option value="info">{t('infoOnly')}</option>
+                            <option value="warning">{t('warningsOnly')}</option>
+                            <option value="danger">{t('criticalOnly')}</option>
+                            <option value="alerts">{t('warningsAndCriticals')}</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                             <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,16 +85,16 @@ export function EventLogs({ logs }: EventLogsProps) {
                 <table className="w-full">
                     <thead>
                         <tr className="z-20">
-                            <th className="sticky top-0 bg-gray-800/50 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">Timestamp</th>
-                            <th className="sticky top-0 bg-gray-800/50 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">Type</th>
-                            <th className="sticky top-0 bg-gray-800/50 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">Event</th>
+                            <th className="sticky top-0 bg-gray-800/50 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">{t('timestamp')}</th>
+                            <th className="sticky top-0 bg-gray-800/50 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">{t('type')}</th>
+                            <th className="sticky top-0 bg-gray-800/50 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">{t('event')}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredLogs.length === 0 ? (
                             <tr>
                                 <td colSpan={3} className="text-center py-8 text-gray-500">
-                                    No {filter !== 'all' ? filter : ''} events recorded yet
+                                    {t('noEventsFound', { filter: filter !== 'all' ? t(`${filter}Only` as any) : '' })}
                                 </td>
                             </tr>
                         ) : (
@@ -124,14 +126,14 @@ export function EventLogs({ logs }: EventLogsProps) {
             {filteredLogs.length > 0 && (
                 <div className="mt-4 flex items-center justify-between">
                     <p className="text-gray-500 text-sm">
-                        Showing {filteredLogs.length} events
+                        {t('showingEvents', { count: filteredLogs.length })}
                     </p>
                     {filter !== 'all' && (
                         <button
                             onClick={() => setFilter('all')}
                             className="text-blue-400 text-sm hover:underline transition-all"
                         >
-                            Clear Filter
+                            {t('clearFilter')}
                         </button>
                     )}
                 </div>

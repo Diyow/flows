@@ -77,28 +77,28 @@ export default function AdminPage() {
                 {/* Stats Cards */}
                 <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatsCard
-                        title="Water Level"
+                        title={t('waterLevel')}
                         value={`${currentLevel.toFixed(2)}m`}
-                        subtitle={`Status: ${status.toUpperCase()}`}
+                        subtitle={`${t('status')}: ${t(status as any)}`}
                         icon={Gauge}
                         color={status === 'safe' ? 'green' : status === 'warning' ? 'amber' : 'red'}
                     />
                     <StatsCard
-                        title="Flow Rate"
+                        title={t('flowRate')}
                         value={`${currentFlow.toFixed(1)} m³/s`}
-                        subtitle="Current flow"
+                        subtitle={t('currentFlow')}
                         icon={Droplets}
                         color="blue"
                     />
                     <StatsCard
-                        title="Device Status"
-                        value={isOnline ? 'Online' : 'Offline'}
-                        subtitle="Sensor connection"
+                        title={t('deviceStatus')}
+                        value={isOnline ? t('online') : t('offline')}
+                        subtitle={t('sensorConnection')}
                         icon={Wifi}
                         color={isOnline ? 'green' : 'red'}
                     />
                     <StatsCard
-                        title="Last Update"
+                        title={t('lastUpdate')}
                         value={lastUpdate.toLocaleTimeString()}
                         subtitle={lastUpdate.toLocaleDateString()}
                         icon={Clock}
@@ -117,10 +117,10 @@ export default function AdminPage() {
                         <div>
                             <p className={`font-medium ${status === 'danger' ? 'text-red-400' : 'text-amber-400'
                                 }`}>
-                                {status === 'danger' ? 'DANGER ALERT' : 'WARNING ALERT'}
+                                {status === 'danger' ? t('dangerAlert') : t('warningAlert')}
                             </p>
                             <p className="text-gray-400 text-sm">
-                                Water level ({currentLevel.toFixed(2)}m) has exceeded the {status} threshold
+                                {t('thresholdExceeded', { level: currentLevel.toFixed(2), status: t(status as any) })}
                             </p>
                         </div>
                     </section>

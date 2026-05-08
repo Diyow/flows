@@ -88,7 +88,7 @@ export function SensorMap({ currentLevel = 0, currentFlow = 0, status = 'safe' }
 
                 <div className="rounded-xl bg-gray-900/50 p-8 text-center">
                     <MapPin className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-                    <p className="text-gray-400 mb-4">Map requires Google Maps API key</p>
+                    <p className="text-gray-400 mb-4">{t('mapApiKeyRequired')}</p>
                     <a
                         href={googleMapsUrl}
                         target="_blank"
@@ -116,7 +116,7 @@ export function SensorMap({ currentLevel = 0, currentFlow = 0, status = 'safe' }
                     <h3 className="text-lg font-semibold text-white">{t('sensorLocation')}</h3>
                 </div>
                 <div className="text-center py-8 text-gray-400">
-                    Failed to load map
+                    {t('failedToLoadMap')}
                 </div>
             </div>
         );
@@ -177,11 +177,11 @@ export function SensorMap({ currentLevel = 0, currentFlow = 0, status = 'safe' }
                             onCloseClick={() => setShowInfoWindow(false)}
                         >
                             <div className="p-2 min-w-[150px]">
-                                <h4 className="font-bold text-gray-900 mb-2">{t('sensorInfo')}</h4>
+                                <h4 className="font-bold text-gray-900 mb-2">{t('mapSensorInfo')}</h4>
                                 <div className="space-y-1 text-sm text-gray-700">
                                     <p><strong>{t('waterLevel')}:</strong> {currentLevel.toFixed(2)}m</p>
                                     <p><strong>{t('flowRate')}:</strong> {currentFlow.toFixed(1)} m³/s</p>
-                                    <p><strong>{t('status')}:</strong> <span style={{ color: getMarkerColor() }}>{status.toUpperCase()}</span></p>
+                                    <p><strong>{t('status')}:</strong> <span style={{ color: getMarkerColor() }}>{t(status as any).toUpperCase()}</span></p>
                                 </div>
                             </div>
                         </InfoWindow>
@@ -195,7 +195,7 @@ export function SensorMap({ currentLevel = 0, currentFlow = 0, status = 'safe' }
                     <span>{sensorLocation.name}</span>
                 </div>
                 <p className="text-center text-xs text-amber-400/80 px-4">
-                    {t('sensorDisclaimer')}
+                    {t('mapSensorDisclaimer')}
                 </p>
             </div>
         </div>

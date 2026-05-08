@@ -54,7 +54,7 @@ export function Header({ variant = 'default', userEmail, onSignOut, lastUpdate }
               <div className="hidden md:flex items-center gap-2 text-gray-400 text-sm">
                 <Clock className="w-4 h-4" />
                 <span>
-                  {t('updated')}: {mounted && lastUpdate ? lastUpdate.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
+                  {t('updated')}: {mounted && lastUpdate ? lastUpdate.toLocaleString(t('locale' as any), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
                 </span>
               </div>
               <LanguageToggle />

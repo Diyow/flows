@@ -98,7 +98,7 @@ export default function Home() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">{t('levelWarning')}</p>
+                        <p className="text-xs text-gray-400 font-medium">{t('levelWarning')}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{t('waterLevel')}</p>
                       </div>
                     </div>
@@ -109,7 +109,7 @@ export default function Home() {
                       </span>
                     )}
                   </div>
-                  <p className="text-3xl font-bold text-amber-400 tracking-tight">{settings.warningLevel}m</p>
+                  <p className="text-3xl font-bold text-amber-400">{settings.warningLevel}m</p>
                   {/* Progress bar */}
                   <div className="mt-3">
                     <div className="flex justify-between text-[10px] text-gray-500 mb-1">
@@ -156,7 +156,7 @@ export default function Home() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">{t('levelDanger')}</p>
+                        <p className="text-xs text-gray-400 font-medium">{t('levelDanger')}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{t('waterLevel')}</p>
                       </div>
                     </div>
@@ -167,7 +167,7 @@ export default function Home() {
                       </span>
                     )}
                   </div>
-                  <p className="text-3xl font-bold text-red-400 tracking-tight">{settings.dangerLevel}m</p>
+                  <p className="text-3xl font-bold text-red-400">{settings.dangerLevel}m</p>
                   <div className="mt-3">
                     <div className="flex justify-between text-[10px] text-gray-500 mb-1">
                       <span>{t('waterLevel')}: {currentLevel.toFixed(2)}m</span>
