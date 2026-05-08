@@ -58,7 +58,19 @@ import { useTranslation } from '@/context/LanguageContext';
  *   - scale={1.8}           → make the model bigger/smaller
  *   - position={[0,-0.8,0]} → shift model (x, y, z)
  */
-function CustomWater({ waterNode, depthBuffer }: any) {
+function CustomWater({
+  waterNode,
+  depthBuffer,
+  currentLevel,
+  currentFlow,
+  dangerLevel
+}: {
+  waterNode: any;
+  depthBuffer: any;
+  currentLevel: number;
+  currentFlow: number;
+  dangerLevel: number;
+}) {
   const [normalMap0, normalMap1] = useLoader(THREE.TextureLoader, [
     '/textures/water/Water_1_M_Normal.jpg',
     '/textures/water/Water_2_M_Normal.jpg',
@@ -67,9 +79,29 @@ function CustomWater({ waterNode, depthBuffer }: any) {
   const dpr = gl.getPixelRatio();
   const uniformsRef = useRef<any>(null);
 
-  useFrame((state) => {
-    if (uniformsRef.current) {
+  const flowTimeRef = useRef(0);
+  const currentHeightRef = useRef(0.05);
+
+  useFrame((state, delta) => {
+    if (uniformsRef.current && water) {
+      // 1. Smoothly interpolate height
+      // 0m = -0.15, dangerLevel = 0.35 (capped)
+      const ratio = Math.max(0, Math.min(currentLevel / dangerLevel, 1));
+      const targetHeight = THREE.MathUtils.lerp(-0.15, 0.35, ratio);
+      currentHeightRef.current = THREE.MathUtils.lerp(currentHeightRef.current, targetHeight, 0.05);
+      water.position.y = currentHeightRef.current;
+
+      // 2. Waves (constant speed ripples)
       uniformsRef.current.uTime.value = state.clock.elapsedTime;
+
+      // 3. Flow (normal map scroll speed)
+      // Map flow rate (m3/s) to a speed multiplier.
+      // We scale the flowDirection vector directly. 0 flow = (0,0) = no movement.
+      // Range adjusted to 0 - 13 m3/s as per prototype specs.
+      const flowSpeedFactor = THREE.MathUtils.mapLinear(currentFlow, 0, 13, 0, 10);
+      if (water.material.uniforms.flowDirection) {
+        water.material.uniforms.flowDirection.value.set(0, flowSpeedFactor);
+      }
     }
   });
 
@@ -198,7 +230,7 @@ function CustomWater({ waterNode, depthBuffer }: any) {
     };
 
     w.rotation.set(-Math.PI / 2, 0, 0);
-    w.position.set(0, 0, 0.05);
+    w.position.set(0, 0.05, 0); // Initial position
 
     setWater(w);
 
@@ -215,7 +247,7 @@ function CustomWater({ waterNode, depthBuffer }: any) {
   return <primitive object={water} />;
 }
 
-function RiverModel() {
+function RiverModel({ currentLevel, currentFlow, dangerLevel }: { currentLevel: number; currentFlow: number; dangerLevel: number }) {
   const { scene, nodes } = useGLTF('/models/scene.gltf');
   const set = useThree((state) => state.set);
 
@@ -241,7 +273,13 @@ function RiverModel() {
       <primitive object={scene} />
       {waterNode && (
         <group position={waterNode.position} rotation={waterNode.rotation} scale={waterNode.scale}>
-          <CustomWater waterNode={waterNode} depthBuffer={depthBuffer} />
+          <CustomWater
+            waterNode={waterNode}
+            depthBuffer={depthBuffer}
+            currentLevel={currentLevel}
+            currentFlow={currentFlow}
+            dangerLevel={dangerLevel}
+          />
         </group>
       )}
     </>
@@ -386,12 +424,24 @@ interface HeroSceneProps {
   status: 'safe' | 'warning' | 'danger';
   currentLevel: number;
   currentFlow: number;
+  dangerLevel: number;
 }
 
-export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps) {
+export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: HeroSceneProps) {
   const { t } = useTranslation();
 
   const [webglSupported, setWebglSupported] = useState(true);
+  const [debugMode, setDebugMode] = useState(false);
+  const [manualLevel, setManualLevel] = useState(currentLevel);
+  const [manualFlow, setManualFlow] = useState(currentFlow);
+
+  // Sync manual values when props change, but only if not in debug mode
+  useEffect(() => {
+    if (!debugMode) {
+      setManualLevel(currentLevel);
+      setManualFlow(currentFlow);
+    }
+  }, [currentLevel, currentFlow, debugMode]);
 
   useEffect(() => {
     // Check for WebGL support and hardware acceleration
@@ -448,7 +498,11 @@ export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps)
         >
           {/* Suspense shows <Loader /> while the GLTF model downloads */}
           <Suspense fallback={<Loader />}>
-            <RiverModel />
+            <RiverModel
+              currentLevel={debugMode ? manualLevel : currentLevel}
+              currentFlow={debugMode ? manualFlow : currentFlow}
+              dangerLevel={dangerLevel}
+            />
 
             {/* <WaterParticles /> */}
 
@@ -471,7 +525,7 @@ export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps)
               autoRotateSpeed={-0.1}
               enableZoom={true}
               minDistance={4}
-              maxDistance={13}
+              maxDistance={12.25}
               enablePan={false}
               minPolarAngle={Math.PI / 5} // Lock vertical rotation to original camera angle (60 deg)
               maxPolarAngle={Math.PI / 3}
@@ -557,6 +611,61 @@ export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps)
       {status === 'danger' && (
         <div className="absolute inset-0 rounded-2xl bg-red-500/10 animate-flash pointer-events-none" />
       )}
+
+      {/* ============================================================
+          DEBUG / MANUAL TESTING UI
+          ============================================================ */}
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-50">
+        <button
+          onClick={() => setDebugMode(!debugMode)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${debugMode
+            ? 'bg-cyan-500 text-white border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+            : 'bg-gray-900/80 text-gray-400 border-gray-700 hover:border-gray-500'
+            }`}
+        >
+          {debugMode ? 'EXIT TEST MODE' : 'MANUAL TEST'}
+        </button>
+
+        {debugMode && (
+          <div className="p-4 rounded-xl bg-gray-900/90 border border-cyan-500/30 backdrop-blur-md shadow-2xl flex flex-col gap-4 w-56 animate-fade-in">
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Level: {manualLevel.toFixed(2)}m</label>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max={dangerLevel}
+                step="0.01"
+                value={manualLevel}
+                onChange={(e) => setManualLevel(parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Flow: {manualFlow.toFixed(1)} m³/s</label>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="13"
+                step="0.1"
+                value={manualFlow}
+                onChange={(e) => setManualFlow(parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-gray-800">
+              <p className="text-[9px] text-gray-500 leading-tight italic">
+                * Overriding live data for visual testing.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

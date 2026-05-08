@@ -45,7 +45,12 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-6 md:space-y-8">
         {/* 3D Hero Section */}
         <section className="animate-fade-in">
-          <HeroScene status={status} currentLevel={currentLevel} currentFlow={currentFlow} />
+          <HeroScene
+            status={status}
+            currentLevel={currentLevel}
+            currentFlow={currentFlow}
+            dangerLevel={settings.dangerLevel}
+          />
         </section>
 
         {/* Gauge and Chart Grid */}
