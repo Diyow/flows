@@ -41,6 +41,7 @@ import { Water2 } from 'three-stdlib';
 import { useTranslation } from '@/context/LanguageContext';
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────
+const SMOOTHING_FACTOR = 0.5; // Higher = faster transitions, Lower = smoother/slower transitions
 
 // ─── RiverModel ─────────────────────────────────────────────────────
 /**
@@ -79,28 +80,35 @@ function CustomWater({
   const dpr = gl.getPixelRatio();
   const uniformsRef = useRef<any>(null);
 
-  const flowTimeRef = useRef(0);
-  const currentHeightRef = useRef(0.05);
-
   useFrame((state, delta) => {
     if (uniformsRef.current && water) {
       // 1. Smoothly interpolate height
-      // 0m = -0.15, dangerLevel = 0.35 (capped)
       const ratio = Math.max(0, Math.min(currentLevel / dangerLevel, 1));
       const targetHeight = THREE.MathUtils.lerp(-0.15, 0.35, ratio);
-      currentHeightRef.current = THREE.MathUtils.lerp(currentHeightRef.current, targetHeight, 0.05);
+
+      // Use delta for frame-rate independent smoothing
+      // We use a slightly adjusted factor for a "heavy water" feel
+      const lerpFactor = 1 - Math.pow(SMOOTHING_FACTOR, delta);
+      currentHeightRef.current = THREE.MathUtils.lerp(currentHeightRef.current, targetHeight, lerpFactor);
       water.position.y = currentHeightRef.current;
 
-      // 2. Waves (constant speed ripples)
+      // 2. Waves
       uniformsRef.current.uTime.value = state.clock.elapsedTime;
 
-      // 3. Flow (normal map scroll speed)
-      // Map flow rate (m3/s) to a speed multiplier.
-      // We scale the flowDirection vector directly. 0 flow = (0,0) = no movement.
-      // Range adjusted to 0 - 13 m3/s as per prototype specs.
-      const flowSpeedFactor = THREE.MathUtils.mapLinear(currentFlow, 0, 13, 0, 10);
+      // 3. Flow - Smoothly interpolate flow speed
+      const targetFlowFactor = THREE.MathUtils.mapLinear(currentFlow, 0, 13, 0, 10);
+      currentFlowRef.current = THREE.MathUtils.lerp(currentFlowRef.current, targetFlowFactor, lerpFactor);
+
       if (water.material.uniforms.flowDirection) {
-        water.material.uniforms.flowDirection.value.set(0, flowSpeedFactor);
+        water.material.uniforms.flowDirection.value.set(0, currentFlowRef.current);
+      }
+
+      // 4. Update uniforms that might change on resize/scroll
+      if (uniformsRef.current.screenSize) {
+        uniformsRef.current.screenSize.value.set(size.width * dpr, size.height * dpr);
+      }
+      if (uniformsRef.current.tDepth) {
+        uniformsRef.current.tDepth.value = depthBuffer;
       }
     }
   });
@@ -112,18 +120,26 @@ function CustomWater({
 
   const [water, setWater] = useState<Water2 | null>(null);
 
+  // Initialize height ref based on initial level to prevent "jump" on mount/re-creation
+  const initialRatio = Math.max(0, Math.min(currentLevel / dangerLevel, 1));
+  const initialHeight = THREE.MathUtils.lerp(-0.15, 0.35, initialRatio);
+  const currentHeightRef = useRef(initialHeight);
+
+  // Initialize flow ref based on initial flow
+  const initialFlowFactor = THREE.MathUtils.mapLinear(currentFlow, 0, 13, 0, 10);
+  const currentFlowRef = useRef(initialFlowFactor);
+
   useEffect(() => {
     if (!waterNode || !waterNode.geometry) return;
 
-    // 1. Prepare Geometry
+    // 1. Prepare Geometry - Reduced resolution (32x128 instead of 64x256) for better performance
     waterNode.geometry.computeBoundingBox();
     const sizeVec = new THREE.Vector3();
     waterNode.geometry.boundingBox.getSize(sizeVec);
     const centerVec = new THREE.Vector3();
     waterNode.geometry.boundingBox.getCenter(centerVec);
 
-    // Create a high-res plane so we have enough vertices to physically displace!
-    const geom = new THREE.PlaneGeometry(sizeVec.x, sizeVec.z, 64, 256);
+    const geom = new THREE.PlaneGeometry(sizeVec.x, sizeVec.z, 32, 128);
     // Move it to XZ plane and translate it to perfectly match the original geometry's bounds
     geom.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
     geom.translate(centerVec.x, centerVec.y, centerVec.z);
@@ -147,13 +163,13 @@ function CustomWater({
     geom.computeBoundingBox();
     geom.computeBoundingSphere();
 
-    // 2. Create Water Instance
+    // 2. Create Water Instance - Reduced texture size (512 instead of 1024) for performance
     const w = new Water2(geom, {
       color: '#67e8f9',
       scale: 1,
       flowDirection: new THREE.Vector2(0, 1),
-      textureWidth: 1024,
-      textureHeight: 1024,
+      textureWidth: 512,
+      textureHeight: 512,
       normalMap0,
       normalMap1,
     });
@@ -230,18 +246,21 @@ function CustomWater({
     };
 
     w.rotation.set(-Math.PI / 2, 0, 0);
-    w.position.set(0, 0.05, 0); // Initial position
+    w.position.set(0, currentHeightRef.current, 0); // Use the ref height immediately
 
     setWater(w);
 
-    // Cleanup logic: Critical for preventing memory leaks
     return () => {
       geom.dispose();
       w.material.dispose();
-      // Water2 doesn't have a simple dispose, but disposing its resources is usually enough
+      // Ensure the internal textures are cleared
+      if (w.material.uniforms.tReflection) w.material.uniforms.tReflection.value?.dispose();
+      if (w.material.uniforms.tRefraction) w.material.uniforms.tRefraction.value?.dispose();
       setWater(null);
     };
-  }, [waterNode, normalMap0, normalMap1, depthBuffer, camera, size, dpr]);
+    // Removed [size, dpr, depthBuffer] from dependencies to prevent re-creation on scroll/resize.
+    // Uniforms for these are now updated in useFrame.
+  }, [waterNode, normalMap0, normalMap1, camera]);
 
   if (!water) return null;
   return <primitive object={water} />;
@@ -251,9 +270,8 @@ function RiverModel({ currentLevel, currentFlow, dangerLevel }: { currentLevel: 
   const { scene, nodes } = useGLTF('/models/scene.gltf');
   const set = useThree((state) => state.set);
 
-  // Creates an invisible depth snapshot of the entire scene for the water shader.
-  // size: 0 forces it to dynamically match the exact physical screen dimensions (fixes pixelation)
-  const depthBuffer = useDepthBuffer({ frames: Infinity, size: 0 });
+  // size: 512 is a good balance between foam quality and performance (size: 0 was too heavy)
+  const depthBuffer = useDepthBuffer({ frames: Infinity, size: 512 });
 
   useEffect(() => {
     if (nodes.Camera) {
