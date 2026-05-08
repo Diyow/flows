@@ -182,7 +182,7 @@ export function useWaterData() {
                 setCurrentLevel(latest.level);
                 setCurrentFlow(latest.flow);
                 setLastUpdate(latest.timestamp);
-                
+
                 // Only set online if the data is actually recent
                 const isRecent = (Date.now() - latest.timestamp.getTime()) < OFFLINE_TIMEOUT;
                 setIsOnline(isRecent);
@@ -205,26 +205,49 @@ export function useWaterData() {
     // lastUpdate is now extracted from the main readings listener above
     // — no separate listener needed, saving ~1,800 reads/hour
 
-    // Subscribe to Firebase settings if configured
-    // No getDoc call — we rely on onSnapshot + localStorage cache to avoid extra reads
+    // Subscribe to Firebase settings (consolidated listener for thresholds, location, and buzzers)
     useEffect(() => {
         if (!useFirebase || !firebaseDb) return;
 
-        const settingsRef = doc(firebaseDb, 'settings', 'thresholds');
+        // Load cached settings first
+        try {
+            const cachedThresh = localStorage.getItem('flows-settings-cache');
+            if (cachedThresh) setSettings(JSON.parse(cachedThresh));
 
-        const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                const newSettings: ThresholdSettings = {
-                    warningLevel: data.warningLevel || 2.0,
-                    dangerLevel: data.dangerLevel || 3.5,
-                };
-                setSettings(newSettings);
-                // Cache to localStorage for future instant loads
-                try {
-                    localStorage.setItem('flows-settings-cache', JSON.stringify(newSettings));
-                } catch { /* ignore */ }
-            }
+            const cachedLoc = localStorage.getItem('flows-location-cache');
+            if (cachedLoc) setSensorLocation(JSON.parse(cachedLoc));
+        } catch { /* ignore */ }
+
+        const settingsCol = collection(firebaseDb, 'settings');
+        const unsubscribe = onSnapshot(settingsCol, (snapshot) => {
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+
+                if (doc.id === 'thresholds') {
+                    const newSettings: ThresholdSettings = {
+                        warningLevel: data.warningLevel || 2.0,
+                        dangerLevel: data.dangerLevel || 3.5,
+                    };
+                    setSettings(newSettings);
+                    try {
+                        localStorage.setItem('flows-settings-cache', JSON.stringify(newSettings));
+                    } catch { /* ignore */ }
+                }
+                else if (doc.id === 'location') {
+                    const loc: SensorLocation = {
+                        lat: data.lat ?? -8.701921,
+                        lng: data.lng ?? 115.233999,
+                        name: data.name ?? 'Denpasar, Sidakarya',
+                    };
+                    setSensorLocation(loc);
+                    try {
+                        localStorage.setItem('flows-location-cache', JSON.stringify(loc));
+                    } catch { /* ignore */ }
+                }
+                else if (doc.id === 'buzzersTest') {
+                    setBuzzerActive(data.active || false);
+                }
+            });
         });
 
         return () => unsubscribe();
@@ -302,12 +325,15 @@ export function useWaterData() {
         return 'safe';
     }, [currentLevel, currentFlow, settings]);
 
-    // Track status changes for automatic logging
+    // Track status changes for automatic logging (with 5s debounce to prevent flicker)
     const currentStatus = getStatus();
-    const [prevStatus, setPrevStatus] = useState<'safe' | 'warning' | 'danger'>(currentStatus);
+    const [prevLoggedStatus, setPrevLoggedStatus] = useState<'safe' | 'warning' | 'danger'>(currentStatus);
 
     useEffect(() => {
-        if (currentStatus !== prevStatus) {
+        if (currentStatus === prevLoggedStatus) return;
+
+        // Wait for status to stabilize for 5 seconds before logging
+        const timer = setTimeout(() => {
             const statusLabels = {
                 safe: 'Safe',
                 warning: 'Warning',
@@ -322,20 +348,28 @@ export function useWaterData() {
                 : `Water level exceeded ${statusLabels[currentStatus]} threshold: ${currentLevel.toFixed(2)}m (Threshold: ${currentStatus === 'warning' ? settings.warningLevel : settings.dangerLevel}m)`;
 
             addLogEntry(message, logType);
-            setPrevStatus(currentStatus);
-        }
-    }, [currentStatus, prevStatus, currentLevel, settings, addLogEntry]);
+            setPrevLoggedStatus(currentStatus);
+        }, 5000);
 
-    // Track sensor connectivity
-    const [prevOnline, setPrevOnline] = useState<boolean>(isOnline);
+        return () => clearTimeout(timer);
+    }, [currentStatus, prevLoggedStatus, currentLevel, settings, addLogEntry]);
+
+    // Track sensor connectivity (with grace period to prevent intermittent dropout logs)
+    const [prevLoggedOnline, setPrevLoggedOnline] = useState<boolean>(isOnline);
+
     useEffect(() => {
-        if (isOnline !== prevOnline) {
+        if (isOnline === prevLoggedOnline) return;
+
+        // Wait 15s to confirm connectivity change before logging
+        const timer = setTimeout(() => {
             const message = isOnline ? 'Sensor connection restored' : 'Sensor went offline — no data receiving';
             const type = isOnline ? 'info' : 'danger';
             addLogEntry(message, type);
-            setPrevOnline(isOnline);
-        }
-    }, [isOnline, prevOnline, addLogEntry]);
+            setPrevLoggedOnline(isOnline);
+        }, 15000);
+
+        return () => clearTimeout(timer);
+    }, [isOnline, prevLoggedOnline, addLogEntry]);
 
     // Periodic check for stale data (heartbeat)
     useEffect(() => {
@@ -355,48 +389,6 @@ export function useWaterData() {
 
 
 
-    // Subscribe to sensor location settings (centralized — used by SensorMap + SensorLocationSettings)
-    useEffect(() => {
-        if (!useFirebase || !firebaseDb) return;
-
-        // Load cached location first
-        try {
-            const cached = localStorage.getItem('flows-location-cache');
-            if (cached) setSensorLocation(JSON.parse(cached));
-        } catch { /* ignore */ }
-
-        const locationRef = doc(firebaseDb, 'settings', 'location');
-        const unsubscribe = onSnapshot(locationRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                const loc: SensorLocation = {
-                    lat: data.lat ?? -8.701921,
-                    lng: data.lng ?? 115.233999,
-                    name: data.name ?? 'Denpasar, Sidakarya',
-                };
-                setSensorLocation(loc);
-                try {
-                    localStorage.setItem('flows-location-cache', JSON.stringify(loc));
-                } catch { /* ignore */ }
-            }
-        });
-
-        return () => unsubscribe();
-    }, [useFirebase, firebaseDb]);
-
-    // Subscribe to buzzer test status
-    useEffect(() => {
-        if (!useFirebase || !firebaseDb) return;
-
-        const buzzerRef = doc(firebaseDb, 'settings', 'buzzersTest');
-        const unsubscribe = onSnapshot(buzzerRef, (docSnap) => {
-            if (docSnap.exists()) {
-                setBuzzerActive(docSnap.data().active || false);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [useFirebase, firebaseDb]);
 
     // Set buzzer state
     const setBuzzerState = useCallback(async (active: boolean, adminEmail?: string) => {

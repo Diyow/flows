@@ -17,7 +17,6 @@ import {
     AlertTriangle,
     Mail,
     Lock,
-    Loader2,
     Crown,
     KeyRound,
     Clock
@@ -174,12 +173,54 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
         );
     };
 
+    // Skeleton helper
+    const Skeleton = ({ className }: { className?: string }) => (
+        <div className={`animate-pulse bg-gray-700/40 rounded ${className}`} />
+    );
+
     if (loading) {
         return (
-            <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
-                <div className="flex items-center gap-3">
-                    <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
-                    <span className="text-gray-400">Loading admin data...</span>
+            <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
+                {/* Header Skeleton */}
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <Users className="w-6 h-6 text-blue-400/50" />
+                        <div>
+                            <Skeleton className="w-28 h-5 mb-1.5" />
+                            <Skeleton className="w-20 h-3" />
+                        </div>
+                    </div>
+                    <Skeleton className="w-32 h-9 rounded-lg" />
+                </div>
+
+                {/* List Skeleton */}
+                <div className="flex-1 space-y-3">
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className="p-5 rounded-xl border border-gray-700/50 bg-gray-900/30 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <Skeleton className="w-11 h-11 rounded-full" />
+                                <div className="space-y-2">
+                                    <Skeleton className="w-32 md:w-48 h-4" />
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-5">
+                                <div className="hidden sm:flex flex-col items-end gap-1.5">
+                                    <Skeleton className="w-16 h-2.5" />
+                                    <Skeleton className="w-24 h-2" />
+                                    <Skeleton className="w-20 h-2" />
+                                </div>
+                                <div className="flex gap-2">
+                                    <Skeleton className="w-10 h-10 rounded-lg" />
+                                    <Skeleton className="w-10 h-10 rounded-lg" />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Footer Skeleton */}
+                <div className="mt-auto pt-6">
+                    <Skeleton className="w-full h-20 rounded-xl" />
                 </div>
             </div>
         );
@@ -288,7 +329,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                         >
                             {inviteLoading ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
                                     Inviting...
                                 </>
                             ) : (
@@ -348,7 +389,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors disabled:opacity-50"
                                         >
                                             {actionLoading === admin.id ? (
-                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                <div className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin" />
                                             ) : (
                                                 <Trash2 className="w-3 h-3" />
                                             )}
@@ -410,7 +451,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                                         }`}
                                                 >
                                                     {actionLoading === admin.id ? (
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
                                                     ) : admin.disabled ? (
                                                         <CheckCircle className="w-4 h-4" />
                                                     ) : (
@@ -464,7 +505,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                                     } disabled:opacity-50`}
                             >
                                 {resetLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
                                 ) : resetSuccess ? (
                                     <CheckCircle className="w-4 h-4" />
                                 ) : (
