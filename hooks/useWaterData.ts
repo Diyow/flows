@@ -24,6 +24,9 @@ export interface WaterReading {
     timestamp: Date;
 }
 
+// Threshold for marking the sensor as offline (10 minutes)
+const OFFLINE_TIMEOUT = 10 * 60 * 1000;
+
 export interface ThresholdSettings {
     warningLevel: number;
     dangerLevel: number;
@@ -38,7 +41,7 @@ export interface SensorLocation {
 export interface LogEntry {
     id?: string;
     message: string;
-    type: 'info' | 'alert';
+    type: 'info' | 'warning' | 'danger';
     timestamp: Date;
 }
 
@@ -115,7 +118,7 @@ export function useWaterData() {
     });
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date(0));
-    const [isOnline, setIsOnline] = useState<boolean>(true);
+    const [isOnline, setIsOnline] = useState<boolean>(false);
     const [useFirebase, setUseFirebase] = useState<boolean>(false);
     const [firebaseDb, setFirebaseDb] = useState<Firestore | null>(null);
     const [sensorLocation, setSensorLocation] = useState<SensorLocation>({
@@ -123,6 +126,7 @@ export function useWaterData() {
         lng: 115.233999,
         name: 'Denpasar, Sidakarya',
     });
+    const [buzzerActive, setBuzzerActive] = useState<boolean>(false);
 
     // Load cached settings from localStorage after mount (avoids hydration mismatch)
     useEffect(() => {
@@ -178,7 +182,13 @@ export function useWaterData() {
                 setCurrentLevel(latest.level);
                 setCurrentFlow(latest.flow);
                 setLastUpdate(latest.timestamp);
-                setIsOnline(true);
+                
+                // Only set online if the data is actually recent
+                const isRecent = (Date.now() - latest.timestamp.getTime()) < OFFLINE_TIMEOUT;
+                setIsOnline(isRecent);
+            } else {
+                // No readings at all in the last 24h
+                setIsOnline(false);
             }
 
             // Downsample with adaptive bucket size based on data time span
@@ -261,7 +271,7 @@ export function useWaterData() {
     }, [useFirebase, firebaseDb]);
 
     // Add log entry
-    const addLogEntry = useCallback(async (message: string, type: 'info' | 'alert') => {
+    const addLogEntry = useCallback(async (message: string, type: 'info' | 'warning' | 'danger') => {
         const newLog: LogEntry = {
             message,
             type,
@@ -279,7 +289,6 @@ export function useWaterData() {
             });
         }
     }, [useFirebase, firebaseDb]);
-
     // Determine current status based on both level and flow
     const getStatus = useCallback((): 'safe' | 'warning' | 'danger' => {
         // Check for danger conditions first
@@ -292,6 +301,59 @@ export function useWaterData() {
         }
         return 'safe';
     }, [currentLevel, currentFlow, settings]);
+
+    // Track status changes for automatic logging
+    const currentStatus = getStatus();
+    const [prevStatus, setPrevStatus] = useState<'safe' | 'warning' | 'danger'>(currentStatus);
+
+    useEffect(() => {
+        if (currentStatus !== prevStatus) {
+            const statusLabels = {
+                safe: 'Safe',
+                warning: 'Warning',
+                danger: 'Danger',
+            };
+
+            const logType: 'info' | 'warning' | 'danger' =
+                currentStatus === 'safe' ? 'info' : (currentStatus as 'warning' | 'danger');
+
+            const message = currentStatus === 'safe'
+                ? `Water level returned to safe range (${currentLevel.toFixed(2)}m)`
+                : `Water level exceeded ${statusLabels[currentStatus]} threshold: ${currentLevel.toFixed(2)}m (Threshold: ${currentStatus === 'warning' ? settings.warningLevel : settings.dangerLevel}m)`;
+
+            addLogEntry(message, logType);
+            setPrevStatus(currentStatus);
+        }
+    }, [currentStatus, prevStatus, currentLevel, settings, addLogEntry]);
+
+    // Track sensor connectivity
+    const [prevOnline, setPrevOnline] = useState<boolean>(isOnline);
+    useEffect(() => {
+        if (isOnline !== prevOnline) {
+            const message = isOnline ? 'Sensor connection restored' : 'Sensor went offline — no data receiving';
+            const type = isOnline ? 'info' : 'danger';
+            addLogEntry(message, type);
+            setPrevOnline(isOnline);
+        }
+    }, [isOnline, prevOnline, addLogEntry]);
+
+    // Periodic check for stale data (heartbeat)
+    useEffect(() => {
+        const checkConnection = () => {
+            if (lastUpdate.getTime() > 0) {
+                const now = Date.now();
+                const diff = now - lastUpdate.getTime();
+                setIsOnline(diff < OFFLINE_TIMEOUT);
+            }
+        };
+
+        const interval = setInterval(checkConnection, 30000); // Check every 30 seconds
+        checkConnection(); // Run once on change
+
+        return () => clearInterval(interval);
+    }, [lastUpdate]);
+
+
 
     // Subscribe to sensor location settings (centralized — used by SensorMap + SensorLocationSettings)
     useEffect(() => {
@@ -322,6 +384,32 @@ export function useWaterData() {
         return () => unsubscribe();
     }, [useFirebase, firebaseDb]);
 
+    // Subscribe to buzzer test status
+    useEffect(() => {
+        if (!useFirebase || !firebaseDb) return;
+
+        const buzzerRef = doc(firebaseDb, 'settings', 'buzzersTest');
+        const unsubscribe = onSnapshot(buzzerRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setBuzzerActive(docSnap.data().active || false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [useFirebase, firebaseDb]);
+
+    // Set buzzer state
+    const setBuzzerState = useCallback(async (active: boolean, adminEmail?: string) => {
+        if (!useFirebase || !firebaseDb) return;
+
+        const buzzerRef = doc(firebaseDb, 'settings', 'buzzersTest');
+        await updateDoc(buzzerRef, {
+            active,
+            triggeredBy: adminEmail || 'Admin',
+            triggeredAt: Timestamp.fromDate(new Date()),
+        });
+    }, [useFirebase, firebaseDb]);
+
     return {
         currentLevel,
         currentFlow,
@@ -335,5 +423,7 @@ export function useWaterData() {
         addLogEntry,
         firebaseDb,
         sensorLocation,
+        buzzerActive,
+        setBuzzerState,
     };
 }

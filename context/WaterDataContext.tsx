@@ -15,9 +15,11 @@ interface WaterDataContextType {
     isOnline: boolean;
     status: 'safe' | 'warning' | 'danger';
     updateThresholds: (settings: ThresholdSettings) => Promise<void>;
-    addLogEntry: (message: string, type: 'info' | 'alert') => Promise<void>;
+    addLogEntry: (message: string, type: 'info' | 'warning' | 'danger') => Promise<void>;
     firebaseDb: Firestore | null;
     sensorLocation: SensorLocation;
+    buzzerActive: boolean;
+    setBuzzerState: (active: boolean, adminEmail?: string) => Promise<void>;
 }
 
 const WaterDataContext = createContext<WaterDataContextType | undefined>(undefined);

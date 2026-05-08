@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings, Save } from 'lucide-react';
+import { Settings, Save, RotateCcw } from 'lucide-react';
 import { ThresholdSettings } from '@/hooks/useWaterData';
 
 interface ThresholdControlsProps {
     settings: ThresholdSettings;
     onUpdate: (settings: ThresholdSettings) => Promise<void>;
-    onLogEvent?: (message: string, type: 'info' | 'alert') => Promise<void>;
+    onLogEvent?: (message: string, type: 'info' | 'warning' | 'danger') => Promise<void>;
     adminEmail?: string;
 }
 
@@ -39,16 +39,22 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }
         setSaving(false);
     };
 
+    const handleReset = () => {
+        setWarningLevel(settings.warningLevel);
+        setDangerLevel(settings.dangerLevel);
+    };
+
     const hasValidation = warningLevel >= dangerLevel;
+    const hasChanges = warningLevel !== settings.warningLevel || dangerLevel !== settings.dangerLevel;
 
     return (
-        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
+        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
             <div className="flex items-center gap-2 mb-6">
                 <Settings className="w-5 h-5 text-blue-400" />
                 <h3 className="text-lg font-semibold text-white">Threshold Settings</h3>
             </div>
 
-            <div className="space-y-6">
+            <div className="flex-1 space-y-6">
                 {/* Water Level Section */}
                 <div className="pb-4 border-b border-gray-700">
                     <h4 className="text-sm font-medium text-cyan-400 mb-4">Water Level Thresholds</h4>
@@ -104,15 +110,25 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }
                         </p>
                     </div>
                 )}
+            </div>
 
-                {/* Save Button */}
+            {/* Action Buttons */}
+            <div className="mt-6 pt-4 border-t border-gray-700/50 flex gap-3">
+                <button
+                    onClick={handleReset}
+                    disabled={!hasChanges || saving}
+                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-gray-400 bg-gray-700/30 border border-gray-700 hover:bg-gray-700/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                    <RotateCcw className="w-4 h-4" />
+                    Reset
+                </button>
                 <button
                     onClick={handleSave}
-                    disabled={saving || hasValidation}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${saved
+                    disabled={saving || hasValidation || !hasChanges}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${saved
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                         : 'bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
                     <Save className="w-4 h-4" />
                     {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}

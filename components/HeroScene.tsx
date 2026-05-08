@@ -458,11 +458,15 @@ export function HeroScene({ status, currentLevel, currentFlow }: HeroSceneProps)
           <OrbitControls
             target={[-0.83, 0, 3.3]}
             autoRotate
-            autoRotateSpeed={0.5}
-            enableZoom={false}
+            autoRotateSpeed={-0.1}
+            enableZoom={true}
+            minDistance={4}
+            maxDistance={13}
             enablePan={false}
-            minPolarAngle={Math.PI / 3} // Lock vertical rotation to original camera angle (60 deg)
+            minPolarAngle={Math.PI / 5} // Lock vertical rotation to original camera angle (60 deg)
             maxPolarAngle={Math.PI / 3}
+            minAzimuthAngle={Math.PI / 7}
+            maxAzimuthAngle={Math.PI / 1.15}
           />
         </Suspense>
       </Canvas>

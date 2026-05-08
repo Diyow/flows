@@ -18,9 +18,9 @@ import {
     Gauge,
     Wifi,
     Clock,
-    Bell,
     AlertTriangle
 } from 'lucide-react';
+import { ManualAlertControl } from '@/components/ManualAlertControl';
 
 export default function AdminPage() {
     const { user, loading, signOut } = useAuth();
@@ -36,7 +36,9 @@ export default function AdminPage() {
         status,
         updateThresholds,
         addLogEntry,
-        firebaseDb
+        firebaseDb,
+        buzzerActive,
+        setBuzzerState
     } = useWaterDataContext();
 
     // Redirect to login if not authenticated
@@ -46,9 +48,12 @@ export default function AdminPage() {
         }
     }, [user, loading, router]);
 
-    // Handle test alarm
-    const handleTestAlarm = async () => {
-        await addLogEntry('Manual test alarm triggered by admin', 'alert');
+    // Handle alarm toggle
+    const handleToggleAlarm = async (active: boolean) => {
+        await setBuzzerState(active, user?.email ?? undefined);
+        const action = active ? 'triggered' : 'stopped';
+        const logType = active ? 'warning' : 'info';
+        await addLogEntry(`Manual test alarm ${action} by ${user?.email ?? 'admin'}`, logType);
     };
 
     // Handle sign out
@@ -143,45 +148,11 @@ export default function AdminPage() {
                     />
 
                     {/* Manual Controls */}
-                    <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
-                        <div className="flex items-center gap-2 mb-6">
-                            <Bell className="w-5 h-5 text-amber-400" />
-                            <h3 className="text-lg font-semibold text-white">Manual Controls</h3>
-                        </div>
-
-                        <div className="space-y-4">
-                            <p className="text-gray-400 text-sm">
-                                Use these controls to manually trigger system actions for testing purposes.
-                            </p>
-
-                            <button
-                                onClick={handleTestAlarm}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 font-medium hover:bg-amber-500/30 transition-colors"
-                            >
-                                <Bell className="w-5 h-5" />
-                                Test Alarm
-                            </button>
-
-                            <p className="text-gray-500 text-xs text-center">
-                                This will create a test event in the logs without affecting real alerts
-                            </p>
-                        </div>
-
-                        {/* Quick Stats */}
-                        <div className="mt-6 pt-6 border-t border-gray-700">
-                            <h4 className="text-sm font-medium text-gray-400 mb-4">Current Thresholds</h4>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
-                                    <p className="text-xs text-gray-400">Level Warn</p>
-                                    <p className="text-lg font-bold text-amber-400">{settings.warningLevel}m</p>
-                                </div>
-                                <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-center">
-                                    <p className="text-xs text-gray-400">Level Danger</p>
-                                    <p className="text-lg font-bold text-red-400">{settings.dangerLevel}m</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <ManualAlertControl
+                        settings={settings}
+                        onToggleAlarm={handleToggleAlarm}
+                        buzzerActive={buzzerActive}
+                    />
                 </section>
 
                 {/* Sensor Location & Admin Management */}
@@ -194,14 +165,19 @@ export default function AdminPage() {
                     <AdminManagement onLogEvent={addLogEntry} />
                 </section>
 
-                {/* Historical Data & Export */}
-                <section>
-                    <HistoricalData firebaseDb={firebaseDb} settings={settings} />
-                </section>
-
                 {/* Event Logs */}
                 <section>
                     <EventLogs logs={logs} />
+                </section>
+
+                {/* Historical Data & Export */}
+                <section>
+                    <HistoricalData
+                        firebaseDb={firebaseDb}
+                        settings={settings}
+                        onLogEvent={addLogEntry}
+                        adminEmail={user.email ?? undefined}
+                    />
                 </section>
             </main>
 

@@ -8,7 +8,7 @@ import { useWaterDataContext } from '@/context/WaterDataContext';
 
 interface SensorLocationSettingsProps {
     firebaseDb: Firestore | null;
-    onLogEvent?: (message: string, type: 'info' | 'alert') => Promise<void>;
+    onLogEvent?: (message: string, type: 'info' | 'warning' | 'danger') => Promise<void>;
     adminEmail?: string;
 }
 
@@ -124,7 +124,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
         editLocation.name !== location.name;
 
     return (
-        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
+        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
             {/* Header */}
             <div className="flex items-center gap-2 mb-6">
                 <MapPin className="w-5 h-5 text-emerald-400" />
@@ -186,7 +186,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
                     value={editLocation.name}
                     onChange={(e) => setEditLocation(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g. Denpasar, Sidakarya"
-                    className="w-full px-4 py-3 bg-gray-900/70 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all"
+                    className="w-full px-4 py-3 bg-gray-900/70 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
                 />
             </div>
 
@@ -207,7 +207,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
                                 setMapCenter(prev => ({ ...prev, lat: val }));
                             }
                         }}
-                        className="w-full px-4 py-3 bg-gray-900/70 border border-gray-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all"
+                        className="w-full px-4 py-3 bg-gray-900/70 border border-gray-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
                     />
                 </div>
                 <div>
@@ -225,7 +225,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
                                 setMapCenter(prev => ({ ...prev, lng: val }));
                             }
                         }}
-                        className="w-full px-4 py-3 bg-gray-900/70 border border-gray-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all"
+                        className="w-full px-4 py-3 bg-gray-900/70 border border-gray-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
                     />
                 </div>
             </div>
@@ -235,7 +235,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
                 <div className="mb-5 p-3 bg-gray-900/50 border border-gray-700/50 rounded-lg">
                     <p className="text-xs text-gray-500 mb-1">Current saved location</p>
                     <p className="text-sm text-gray-300">
-                        📍 {location.name}{' '}
+                        {location.name}{' '}
                         <span className="text-gray-500 font-mono text-xs">
                             ({location.lat}, {location.lng})
                         </span>
@@ -258,7 +258,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
                     disabled={saving || !hasChanges || !editLocation.name.trim()}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${saved
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                        : 'bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30'
                         } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
                     <Save className="w-4 h-4" />

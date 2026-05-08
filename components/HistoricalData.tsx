@@ -31,6 +31,8 @@ import {
 interface HistoricalDataProps {
     firebaseDb: Firestore | null;
     settings: ThresholdSettings;
+    onLogEvent?: (message: string, type: 'info' | 'warning' | 'danger') => Promise<void>;
+    adminEmail?: string;
 }
 
 interface DownsampledReading extends WaterReading {
@@ -112,7 +114,7 @@ function toDatetimeLocal(date: Date): string {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
+export function HistoricalData({ firebaseDb, settings, onLogEvent, adminEmail }: HistoricalDataProps) {
     // Default range: last 7 days
     const [startDate, setStartDate] = useState<string>(() => {
         const d = new Date();
@@ -264,7 +266,8 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
 
         const csv = [headers, ...rows].join('\n');
         downloadFile(csv, `flows_readings_${formatFilenameDate(new Date(startDate))}_to_${formatFilenameDate(new Date(endDate))}.csv`, 'text/csv');
-    }, [processedData, startDate, endDate]);
+        onLogEvent?.(`${adminEmail ?? 'Admin'} exported historical data as CSV (${processedData.length} records)`, 'info');
+    }, [processedData, startDate, endDate, onLogEvent, adminEmail]);
 
     // Export as JSON
     const handleExportJSON = useCallback(() => {
@@ -293,7 +296,8 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
 
         const json = JSON.stringify(exportData, null, 2);
         downloadFile(json, `flows_readings_${formatFilenameDate(new Date(startDate))}_to_${formatFilenameDate(new Date(endDate))}.json`, 'application/json');
-    }, [processedData, startDate, endDate, settings, rawCount]);
+        onLogEvent?.(`${adminEmail ?? 'Admin'} exported historical data as JSON (${processedData.length} records)`, 'info');
+    }, [processedData, startDate, endDate, settings, rawCount, onLogEvent, adminEmail]);
 
     // Status badge component
     const StatusBadge = ({ status }: { status: 'safe' | 'warning' | 'danger' }) => {
@@ -310,11 +314,54 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
         );
     };
 
+    // Skeleton components
+    const Skeleton = ({ className }: { className?: string }) => (
+        <div className={`animate-pulse bg-gray-700/50 rounded ${className}`} />
+    );
+
+    const DataSkeleton = () => (
+        <>
+            {/* Stats Skeleton */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                {[...Array(6)].map((_, i) => (
+                    <div key={i} className="p-3 rounded-lg bg-gray-900/40 border border-gray-700/50">
+                        <div className="flex items-center gap-1.5 mb-2">
+                            <Skeleton className="w-3.5 h-3.5" />
+                            <Skeleton className="w-12 h-3" />
+                        </div>
+                        <Skeleton className="w-16 h-6 mb-1" />
+                        <Skeleton className="w-10 h-2.5" />
+                    </div>
+                ))}
+            </div>
+
+            {/* Table Skeleton */}
+            <div className="overflow-hidden rounded-lg border border-gray-700/50">
+                <div className="bg-gray-900/40 h-10 border-b border-gray-700/50 flex items-center px-4 gap-4">
+                    <Skeleton className="w-24 h-4" />
+                    <div className="flex-1" />
+                    <Skeleton className="w-20 h-4" />
+                    <Skeleton className="w-20 h-4" />
+                    <Skeleton className="w-16 h-4" />
+                </div>
+                {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-12 border-b border-gray-700/30 flex items-center px-4 gap-4 last:border-0">
+                        <Skeleton className="w-32 h-3.5" />
+                        <div className="flex-1" />
+                        <Skeleton className="w-12 h-3.5" />
+                        <Skeleton className="w-12 h-3.5" />
+                        <Skeleton className="w-16 h-5 rounded-full" />
+                    </div>
+                ))}
+            </div>
+        </>
+    );
+
     return (
         <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700">
             {/* Header */}
             <div className="flex items-center gap-2 mb-6">
-                <Database className="w-5 h-5 text-cyan-400" />
+                <Database className="w-5 h-5 text-blue-400" />
                 <h3 className="text-lg font-semibold text-white">Historical Data & Export</h3>
             </div>
 
@@ -329,7 +376,7 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
                         type="datetime-local"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-gray-900/60 border border-gray-600 text-gray-200 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-colors"
+                        className="w-full px-3 py-2 rounded-lg bg-gray-900/60 border border-gray-600 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
                     />
                 </div>
 
@@ -344,14 +391,14 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
                         type="datetime-local"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-gray-900/60 border border-gray-600 text-gray-200 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-colors"
+                        className="w-full px-3 py-2 rounded-lg bg-gray-900/60 border border-gray-600 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
                     />
                 </div>
 
                 <button
                     onClick={handleLoadData}
                     disabled={isLoading || !firebaseDb}
-                    className="flex items-center gap-2 px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium text-sm transition-colors whitespace-nowrap"
+                    className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-sm transition-colors whitespace-nowrap"
                 >
                     {isLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -379,19 +426,14 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
             {/* Empty state — before loading */}
             {!hasLoaded && !isLoading && !error && (
                 <div className="text-center py-12 text-gray-500">
-                    <Database className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                    <p className="text-sm">Select a date range and click <span className="text-cyan-400 font-medium">Load Data</span> to view historical readings.</p>
+                    <Database className="w-10 h-10 mx-auto mb-3 opacity-40 text-blue-400" />
+                    <p className="text-sm">Select a date range and click <span className="text-blue-400 font-medium">Load Data</span> to view historical readings.</p>
                     <p className="text-xs mt-1 text-gray-600">Data is fetched on-demand to minimize Firestore usage.</p>
                 </div>
             )}
 
             {/* Loading state */}
-            {isLoading && (
-                <div className="text-center py-12">
-                    <Loader2 className="w-8 h-8 mx-auto mb-3 text-cyan-400 animate-spin" />
-                    <p className="text-gray-400 text-sm">Fetching historical readings...</p>
-                </div>
-            )}
+            {isLoading && <DataSkeleton />}
 
             {/* Data loaded */}
             {hasLoaded && !isLoading && (
@@ -408,7 +450,7 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                                     <div className="p-3 rounded-lg bg-gray-900/40 border border-gray-700/50">
                                         <div className="flex items-center gap-1.5 mb-1">
-                                            <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+                                            <BarChart3 className="w-3.5 h-3.5 text-blue-400" />
                                             <span className="text-xs text-gray-500">Records</span>
                                         </div>
                                         <p className="text-lg font-bold text-white">{stats.totalRecords.toLocaleString()}</p>
@@ -436,7 +478,7 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
 
                                     <div className="p-3 rounded-lg bg-gray-900/40 border border-gray-700/50">
                                         <div className="flex items-center gap-1.5 mb-1">
-                                            <Droplets className="w-3.5 h-3.5 text-purple-400" />
+                                            <Droplets className="w-3.5 h-3.5 text-blue-400" />
                                             <span className="text-xs text-gray-500">Avg Flow</span>
                                         </div>
                                         <p className="text-lg font-bold text-white">{stats.avgFlow.toFixed(1)}</p>
@@ -543,14 +585,14 @@ export function HistoricalData({ firebaseDb, settings }: HistoricalDataProps) {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={handleExportCSV}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-600/30 transition-colors"
+                                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/30 transition-colors"
                                     >
                                         <FileSpreadsheet className="w-4 h-4" />
                                         CSV
                                     </button>
                                     <button
                                         onClick={handleExportJSON}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 text-sm font-medium hover:bg-blue-600/30 transition-colors"
+                                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 text-sm font-medium hover:bg-blue-500/30 transition-colors"
                                     >
                                         <FileJson className="w-4 h-4" />
                                         JSON
