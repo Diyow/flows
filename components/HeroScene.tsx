@@ -27,12 +27,11 @@
 
 'use client'; // Required: Three.js only works in the browser, not on the server
 
-import { Suspense, useRef, useMemo, useEffect, useState } from 'react';
+import { Suspense, useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber';
 import {
   useGLTF,        // Hook to load .gltf/.glb 3D models
   Environment,    // Pre-built lighting environments (city, sunset, etc.)
-  ContactShadows, // Soft shadow plane beneath objects
   OrbitControls,  // Camera controls
   useDepthBuffer, // Renders depth buffer of the scene
 } from '@react-three/drei';
@@ -304,100 +303,6 @@ function RiverModel({ currentLevel, currentFlow, dangerLevel }: { currentLevel: 
   );
 }
 
-// ─── WaterParticles ─────────────────────────────────────────────────
-/**
- * Creates many small glowing spheres that float around the scene
- * to simulate water droplets / atmosphere.
- *
- * HOW IT WORKS:
- *   Instead of rendering 120 separate <mesh> components (slow),
- *   we use THREE.InstancedMesh — it draws the same geometry many
- *   times in a single draw call, which is much faster.
- *
- *   Each particle has a random position, speed, and phase offset.
- *   Every frame, we update each instance's transform matrix to
- *   make them float around with sine/cosine waves.
- *
- * TWEAKABLE VALUES:
- *   - count={120}           → number of particles (more = denser)
- *   - spread: 14            → how far particles spread (lines 104-106)
- *   - scale: 0.02–0.06      → particle size range
- *   - color="#67e8f9"        → particle color (cyan)
- *   - emissive="#06b6d4"     → glow color
- *   - emissiveIntensity={2}  → glow brightness
- *   - opacity={0.6}          → transparency (0 = invisible, 1 = solid)
- *
- * @param count - How many particles to render (default: 120)
- */
-function WaterParticles({ count = 120 }: { count?: number }) {
-  const mesh = useRef<THREE.InstancedMesh>(null);
-
-  // Generate random positions/speeds once (useMemo = only on first render)
-  const particles = useMemo(() => {
-    const temp = [];
-    for (let i = 0; i < count; i++) {
-      temp.push({
-        // Random position in a 14×8×14 box
-        position: [
-          (Math.random() - 0.5) * 14, // x: -7 to +7
-          Math.random() * 8 - 1,       // y: -1 to +7
-          (Math.random() - 0.5) * 14, // z: -7 to +7
-        ] as [number, number, number],
-        speed: 0.2 + Math.random() * 0.5,     // How fast it bobs
-        offset: Math.random() * Math.PI * 2,   // Phase offset so they don't all sync
-        scale: 0.02 + Math.random() * 0.04,    // Size: 0.02 to 0.06
-      });
-    }
-    return temp;
-  }, [count]);
-
-  // Reusable dummy object for calculating transform matrices
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-
-  // Runs every frame — updates all particle positions
-  useFrame((state) => {
-    if (!mesh.current) return;
-    const t = state.clock.elapsedTime;
-
-    particles.forEach((p, i) => {
-      // Animate Y position with sine wave
-      const y = p.position[1] + Math.sin(t * p.speed + p.offset) * 0.5;
-
-      // Set position with subtle X/Z drift
-      dummy.position.set(
-        p.position[0] + Math.sin(t * 0.3 + p.offset) * 0.3,
-        y,
-        p.position[2] + Math.cos(t * 0.2 + p.offset) * 0.3
-      );
-
-      // Pulse the scale (breathing effect)
-      dummy.scale.setScalar(p.scale * (1 + Math.sin(t * 2 + p.offset) * 0.3));
-
-      // Apply the transform to this instance
-      dummy.updateMatrix();
-      mesh.current!.setMatrixAt(i, dummy.matrix);
-    });
-
-    // Tell Three.js the instance data changed
-    mesh.current.instanceMatrix.needsUpdate = true;
-  });
-
-  return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
-      {/* All particles share this geometry (a small sphere) */}
-      <sphereGeometry args={[1, 8, 8]} />
-      {/* Glowing cyan material */}
-      <meshStandardMaterial
-        color="#67e8f9"
-        emissive="#06b6d4"
-        emissiveIntensity={2}
-        transparent
-        opacity={0.6}
-        toneMapped={false} // Allows glow to be brighter than white
-      />
-    </instancedMesh>
-  );
-}
 
 
 
@@ -522,16 +427,6 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
               dangerLevel={dangerLevel}
             />
 
-            {/* <WaterParticles /> */}
-
-            {/* Soft shadow on the "floor" beneath the model */}
-            <ContactShadows
-              position={[0, -1.5, 0]}
-              opacity={0.35}
-              scale={20}
-              blur={2.5}
-              far={5}
-            />
 
             {/* Environment map: provides ambient reflections/lighting from HDRI */}
             <Environment files="/models/EveningEnvironmentHDRI001_1K_HDR.exr" background />
@@ -542,7 +437,7 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
               autoRotate
               autoRotateSpeed={-0.1}
               enableZoom={true}
-              minDistance={4}
+              minDistance={5}
               maxDistance={12.25}
               enablePan={false}
               minPolarAngle={Math.PI / 5} // Lock vertical rotation to original camera angle (60 deg)
