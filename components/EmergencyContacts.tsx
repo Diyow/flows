@@ -22,30 +22,34 @@ export function EmergencyContacts() {
     const { t } = useTranslation();
 
     return (
-        <div className="p-6 rounded-2xl bg-gray-800/50 border border-gray-700">
+        <div className="p-4 sm:p-6 rounded-2xl bg-gray-800/50 border border-gray-700">
             <div className="flex items-center gap-2 mb-4">
-                <Phone className="w-5 h-5 text-red-400" />
-                <h3 className="text-lg font-semibold text-white">{t('emergencyContacts')}</h3>
+                <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
+                <h3 className="text-base sm:text-lg font-semibold text-white">{t('emergencyContacts')}</h3>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
                 {emergencyContacts.map((contact) => {
                     const Icon = contact.icon;
                     return (
                         <a
                             key={contact.nameKey}
                             href={`tel:${contact.number}`}
-                            className="flex flex-col items-center p-4 rounded-xl bg-gray-900/50 border border-gray-700 hover:border-gray-500 transition-all hover:scale-105"
+                            className="flex flex-col items-center p-3 sm:p-4 rounded-xl bg-gray-900/50 border border-gray-700 hover:border-gray-500 transition-all hover:scale-105"
                         >
-                            <Icon className={`w-8 h-8 mb-2 ${contact.color}`} />
-                            <span className="text-gray-400 text-xs uppercase tracking-wide">{t(contact.nameKey)}</span>
-                            <span className="text-white font-bold text-xl">{contact.number}</span>
+                            <Icon className={`w-6 h-6 sm:w-8 sm:h-8 mb-2 ${contact.color}`} />
+                            <span className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wide text-center leading-tight mb-0.5">
+                                {t(contact.nameKey)}
+                            </span>
+                            <span className="text-white font-bold text-lg sm:text-xl">
+                                {contact.number}
+                            </span>
                         </a>
                     );
                 })}
             </div>
 
-            <p className="mt-4 text-center text-gray-500 text-sm">
+            <p className="mt-4 text-center text-gray-500 text-[11px] sm:text-sm">
                 {t('tapToCall')}
             </p>
         </div>

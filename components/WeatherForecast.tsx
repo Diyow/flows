@@ -44,7 +44,7 @@ export function WeatherForecast() {
                     <div className="w-8 h-8 bg-gray-700 rounded-lg" />
                 </div>
                 {/* Current weather skeleton */}
-                <div className="flex items-center justify-between mb-6 p-4 rounded-xl bg-gray-900/50">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6 p-4 rounded-xl bg-gray-900/50">
                     <div className="flex items-center gap-4">
                         <div className="w-16 h-16 bg-gray-700 rounded-xl" />
                         <div className="space-y-2">
@@ -53,15 +53,15 @@ export function WeatherForecast() {
                             <div className="h-3 bg-gray-700 rounded w-24" />
                         </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-1 gap-3 border-t sm:border-t-0 border-gray-800 pt-4 sm:pt-0">
                         <div className="h-3 bg-gray-700 rounded w-16" />
                         <div className="h-3 bg-gray-700 rounded w-20" />
-                        <div className="h-3 bg-gray-700 rounded w-28" />
+                        <div className="h-3 bg-gray-700 rounded w-28 col-span-2 sm:col-span-1" />
                     </div>
                 </div>
                 {/* Forecast skeleton */}
                 <div className="h-3 bg-gray-700 rounded w-20 mb-3" />
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                     {[1, 2, 3, 4, 5].map((i) => (
                         <div key={i} className="p-3 rounded-xl bg-gray-900/50 flex flex-col items-center gap-1.5">
                             <div className="h-3 bg-gray-700 rounded w-10" />
@@ -108,45 +108,52 @@ export function WeatherForecast() {
                 </div>
                 <button
                     onClick={refresh}
-                    className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                    title="Refresh weather"
+                    className="p-2.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors active:scale-95 focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+                    title={t('refreshWeather') || 'Refresh weather'}
+                    aria-label={t('refreshWeather') || 'Refresh weather'}
                 >
-                    <RefreshCw className="w-4 h-4" />
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 </button>
             </div>
 
             {/* High Rain Warning */}
             {isHighRainRisk && (
-                <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center gap-3">
+                <div 
+                    className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center gap-3"
+                    role="alert"
+                    aria-live="polite"
+                >
                     <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
                     <p className="text-amber-400 text-sm">{t('highRainWarning')}</p>
                 </div>
             )}
 
             {/* Current Weather */}
-            <div className="flex items-center justify-between mb-6 p-4 rounded-xl bg-gray-900/50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6 p-4 rounded-xl bg-gray-900/50">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-sky-500/20">
+                    <div className="p-3 rounded-xl bg-sky-500/20" aria-hidden="true">
                         <CurrentIcon className="w-10 h-10 text-sky-400" />
                     </div>
                     <div>
                         <p className="text-gray-400 text-sm">{weather.location}</p>
-                        <p className="text-3xl font-bold text-white">{weather.current.temp}°C</p>
-                        <p className="text-gray-300 capitalize">{weather.current.description}</p>
+                        <div className="flex items-baseline gap-2">
+                            <p className="text-3xl font-bold text-white">{weather.current.temp}°C</p>
+                            <p className="text-gray-300 capitalize text-sm">{weather.current.description}</p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2 text-gray-400">
-                        <Droplets className="w-4 h-4 text-blue-400" />
+                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 text-sm border-t sm:border-t-0 border-gray-800 pt-4 sm:pt-0">
+                    <div className="flex items-center gap-2 text-gray-400" title={t('humidity')}>
+                        <Droplets className="w-4 h-4 text-blue-400" aria-hidden="true" />
                         <span>{weather.current.humidity}%</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-400">
-                        <Wind className="w-4 h-4 text-cyan-400" />
+                    <div className="flex items-center gap-2 text-gray-400" title={t('windSpeed')}>
+                        <Wind className="w-4 h-4 text-cyan-400" aria-hidden="true" />
                         <span>{weather.current.windSpeed} km/h</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-400 col-span-2">
-                        <CloudRain className="w-4 h-4 text-indigo-400" />
+                    <div className="flex items-center gap-2 text-gray-400 col-span-2 sm:col-span-2" title={t('rainChance')}>
+                        <CloudRain className="w-4 h-4 text-indigo-400" aria-hidden="true" />
                         <span>{t('rainChance')}: {weather.current.rainChance}%</span>
                     </div>
                 </div>
@@ -155,7 +162,7 @@ export function WeatherForecast() {
             {/* 5-Day Forecast */}
             <div>
                 <p className="text-sm text-gray-400 mb-3">{t('forecast')}</p>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                     {weather.forecast.map((day, index) => {
                         const DayIcon = getWeatherIcon(day.icon);
                         const isHighRain = day.rainChance > 70;
@@ -167,12 +174,16 @@ export function WeatherForecast() {
                                     ? 'bg-amber-500/10 border border-amber-500/30'
                                     : 'bg-gray-900/50 hover:bg-gray-900/70'
                                     }`}
+                                role="group"
+                                aria-label={`${day.dayName} weather forecast`}
                             >
                                 <p className="text-xs text-gray-400 mb-1">
                                     {index === 0 ? t('today') : day.dayName}
                                 </p>
-                                <DayIcon className={`w-6 h-6 mx-auto mb-1 ${isHighRain ? 'text-amber-400' : 'text-sky-400'
-                                    }`} />
+                                <DayIcon 
+                                    className={`w-6 h-6 mx-auto mb-1 ${isHighRain ? 'text-amber-400' : 'text-sky-400'}`} 
+                                    aria-hidden="true"
+                                />
                                 <p className="text-white font-medium">{day.temp}°</p>
                                 <p className={`text-xs ${isHighRain ? 'text-amber-400' : 'text-gray-500'}`}>
                                     {day.rainChance}%

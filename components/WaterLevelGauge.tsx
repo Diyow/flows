@@ -71,9 +71,9 @@ export function WaterLevelGauge({
             </div>
 
             {/* Gauge body - flex-1 to fill remaining space */}
-            <div className="flex-1 flex gap-4 md:gap-0 min-h-0 justify-center md:justify-start">
+            <div className="flex-1 flex gap-4 lg:gap-0 min-h-0 justify-center lg:justify-start">
                 {/* Tick scale on the left */}
-                <div className="relative w-10 md:w-12 shrink-0">
+                <div className="relative w-16 shrink-0">
                     {ticks}
                 </div>
 
@@ -115,7 +115,7 @@ export function WaterLevelGauge({
                 </div>
 
                 {/* Threshold labels on the right */}
-                <div className="relative w-14 md:w-16 shrink-0">
+                <div className="relative w-16 shrink-0">
                     {/* Warning label */}
                     <div
                         className="absolute left-2 flex items-center gap-1"

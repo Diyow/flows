@@ -43,11 +43,13 @@ export const translations = {
         temperature: 'Temperature',
         humidity: 'Humidity',
         wind: 'Wind',
+        windSpeed: 'Wind Speed',
         rainChance: 'Rain Chance',
         forecast: 'Forecast',
         today: 'Today',
         noWeatherData: 'Weather data unavailable',
         highRainWarning: 'High rainfall expected - Flood risk elevated',
+        refreshWeather: 'Refresh weather',
 
         // Map
         sensorLocation: 'Sensor Location',
@@ -241,11 +243,13 @@ export const translations = {
         temperature: 'Suhu',
         humidity: 'Kelembaban',
         wind: 'Angin',
+        windSpeed: 'Kecepatan Angin',
         rainChance: 'Peluang Hujan',
         forecast: 'Prakiraan',
         today: 'Hari Ini',
         noWeatherData: 'Data cuaca tidak tersedia',
         highRainWarning: 'Curah hujan tinggi diperkirakan - Risiko banjir meningkat',
+        refreshWeather: 'Perbarui cuaca',
 
         // Map
         sensorLocation: 'Lokasi Sensor',

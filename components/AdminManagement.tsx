@@ -149,7 +149,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
 
     if (loading) {
         return (
-            <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
+            <div className="p-4 sm:p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
                 {/* Header Skeleton */}
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
@@ -165,7 +165,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                 {/* List Skeleton */}
                 <div className="flex-1 space-y-3">
                     {[...Array(4)].map((_, i) => (
-                        <div key={i} className="p-5 rounded-xl border border-gray-700/50 bg-gray-900/30 flex items-center justify-between gap-4">
+                        <div key={i} className="p-4 rounded-xl border border-gray-700/50 bg-gray-900/30 flex items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
                                 <Skeleton className="w-11 h-11 rounded-full" />
                                 <div className="space-y-2">
@@ -196,7 +196,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
     }
 
     return (
-        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
+        <div className="p-4 sm:p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col min-h-[500px] lg:min-h-0">
             {/* Section Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
@@ -212,17 +212,19 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                         setShowInviteForm(!showInviteForm);
                         clearError();
                     }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-500/40 text-blue-400 text-sm font-medium hover:bg-blue-500/10 transition-all duration-200"
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border border-blue-500/40 text-blue-400 text-xs sm:text-sm font-medium hover:bg-blue-500/10 transition-all duration-200"
                 >
                     {showInviteForm ? (
                         <>
                             <X className="w-4 h-4" />
-                            {t('cancel')}
+                            <span className="hidden xs:inline">{t('cancel')}</span>
+                            <span className="xs:hidden">{t('cancel')}</span>
                         </>
                     ) : (
                         <>
                             <UserPlus className="w-4 h-4" />
-                            {t('inviteAdmin')}
+                            <span className="hidden xs:inline">{t('inviteAdmin')}</span>
+                            <span className="xs:hidden">{t('invite')}</span>
                         </>
                     )}
                 </button>
@@ -313,8 +315,8 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
             )}
 
             {/* Admin List Area */}
-            <div className="flex-1 min-h-0 relative mt-2">
-                <div className="absolute inset-0 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+            <div className="flex-1 min-h-[300px] lg:min-h-0 relative mt-2">
+                <div className="lg:absolute lg:inset-0 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
                 {admins.map((admin) => {
                     const isCurrentUser = admin.email === user?.email;
                     const isBeingDeleted = confirmDelete === admin.id;
@@ -322,7 +324,7 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
                     return (
                         <div
                             key={admin.id}
-                            className={`p-5 rounded-xl border transition-all duration-300 group ${admin.disabled
+                            className={`p-4 rounded-xl border transition-all duration-300 group ${admin.disabled
                                 ? 'bg-gray-900/30 border-gray-800 opacity-60'
                                 : isCurrentUser
                                     ? 'bg-blue-500/5 border-blue-500/20'
@@ -457,8 +459,8 @@ export function AdminManagement({ onLogEvent }: AdminManagementProps) {
             {/* Bottom Section: Password Reset & Info */}
             <div className="mt-auto pt-6 space-y-4">
                 {user?.email && admins.length > 0 && (
-                    <div className="p-5 rounded-xl bg-gray-900/30 border border-gray-700/50">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="p-4 sm:p-5 rounded-xl bg-gray-900/30 border border-gray-700/50">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
                                 <p className="text-gray-500 text-[11px] leading-relaxed">
                                     {t('sendPasswordResetTo', { email: user.email })}
