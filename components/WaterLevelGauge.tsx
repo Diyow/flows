@@ -63,7 +63,7 @@ export function WaterLevelGauge({
     const dangerPos = (dangerLevel / effectiveMaxLevel) * 100;
 
     return (
-        <div className={`relative h-full flex flex-col p-6 rounded-2xl bg-gray-800/50 border ${getBorderColor()}`}>
+        <div className={`relative min-h-[450px] lg:min-h-0 h-full flex flex-col p-5 md:p-6 rounded-2xl bg-gray-800/50 border ${getBorderColor()}`}>
             {/* Header */}
             <div className="flex items-center gap-2 mb-6">
                 <Droplets className="w-5 h-5 text-blue-400" />
@@ -71,14 +71,14 @@ export function WaterLevelGauge({
             </div>
 
             {/* Gauge body - flex-1 to fill remaining space */}
-            <div className="flex-1 flex gap-0 min-h-0">
+            <div className="flex-1 flex gap-4 md:gap-0 min-h-0 justify-center md:justify-start">
                 {/* Tick scale on the left */}
-                <div className="relative w-12 shrink-0">
+                <div className="relative w-10 md:w-12 shrink-0">
                     {ticks}
                 </div>
 
                 {/* Main gauge bar */}
-                <div className={`relative flex-1 max-w-24 bg-gray-900/80 rounded-xl overflow-hidden border border-gray-700/60 ${getGlow()}`}>
+                <div className={`relative flex-1 max-w-[80px] md:max-w-24 bg-gray-900/80 rounded-xl overflow-hidden border border-gray-700/60 ${getGlow()}`}>
                     {/* Water fill */}
                     <div
                         className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t ${getGradient()} transition-all duration-1000 ease-out`}
@@ -115,14 +115,14 @@ export function WaterLevelGauge({
                 </div>
 
                 {/* Threshold labels on the right */}
-                <div className="relative w-16 shrink-0">
+                <div className="relative w-14 md:w-16 shrink-0">
                     {/* Warning label */}
                     <div
                         className="absolute left-2 flex items-center gap-1"
                         style={{ bottom: `${warningPos}%`, transform: 'translateY(50%)' }}
                     >
                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                        <span className="text-[10px] text-amber-400 font-medium whitespace-nowrap">{warningLevel}m</span>
+                        <span className="text-[10px] md:text-xs text-amber-400 font-medium whitespace-nowrap">{warningLevel}m</span>
                     </div>
                     {/* Danger label */}
                     <div
@@ -130,16 +130,16 @@ export function WaterLevelGauge({
                         style={{ bottom: `${dangerPos}%`, transform: 'translateY(50%)' }}
                     >
                         <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                        <span className="text-[10px] text-red-400 font-medium whitespace-nowrap">{dangerLevel}m</span>
+                        <span className="text-[10px] md:text-xs text-red-400 font-medium whitespace-nowrap">{dangerLevel}m</span>
                     </div>
                 </div>
             </div>
 
             {/* Current Reading */}
             <div className="mt-5 text-center">
-                <span className="text-gray-500 text-xs uppercase tracking-wider font-medium">{t('currentReading')}</span>
-                <div className="text-3xl font-bold text-white tracking-tight mt-1">
-                    {level.toFixed(2)} <span className="text-lg font-medium text-gray-400">m</span>
+                <span className="text-gray-500 text-[10px] md:text-xs uppercase tracking-wider font-medium">{t('currentReading')}</span>
+                <div className="text-2xl md:text-3xl font-bold text-white tracking-tight mt-1">
+                    {level.toFixed(2)} <span className="text-base md:text-lg font-medium text-gray-400">m</span>
                 </div>
             </div>
 

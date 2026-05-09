@@ -25,7 +25,7 @@ export interface WeatherData {
 }
 
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
-const CACHE_KEY = 'floodwatch-weather-cache';
+const CACHE_KEY = 'FLOWS-weather-cache';
 
 // Denpasar, Sidakarya coordinates
 const LOCATION = {

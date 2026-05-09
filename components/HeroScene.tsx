@@ -2,7 +2,7 @@
  * HeroScene.tsx — 3D Hero Component
  *
  * This component renders an interactive 3D scene as the hero section
- * of the FloodWatch app. It uses:
+ * of the FLOWS app. It uses:
  *
  *   - React Three Fiber (@react-three/fiber)  → React wrapper for Three.js
  *   - Drei (@react-three/drei)                → Helper components for R3F
@@ -82,8 +82,11 @@ function CustomWater({
   useFrame((state, delta) => {
     if (uniformsRef.current && water) {
       // 1. Smoothly interpolate height
+      // ratio: 0 (empty) to 1 (full/danger)
       const ratio = Math.max(0, Math.min(currentLevel / dangerLevel, 1));
-      const targetHeight = THREE.MathUtils.lerp(-0.15, 0.35, ratio);
+      // targetHeight: maps ratio to actual 3D Y-position
+      // -0.15 = bottom/dry, 0.35 = overflowing
+      const targetHeight = THREE.MathUtils.lerp(-0.12, 0.35, ratio);
 
       // Use delta for frame-rate independent smoothing
       // We use a slightly adjusted factor for a "heavy water" feel
@@ -93,6 +96,10 @@ function CustomWater({
 
       // 2. Waves
       uniformsRef.current.uTime.value = state.clock.elapsedTime;
+      if (uniformsRef.current.uStrength) {
+        // Wave strength increases as the water level rises (0 to 1)
+        uniformsRef.current.uStrength.value = ratio;
+      }
 
       // 3. Flow - Smoothly interpolate flow speed
       const targetFlowFactor = THREE.MathUtils.mapLinear(currentFlow, 0, 13, 0, 10);
@@ -182,18 +189,26 @@ function CustomWater({
       shader.uniforms.cameraNear = { value: camera.near };
       shader.uniforms.cameraFar = { value: camera.far };
       shader.uniforms.uTime = { value: 0 };
+      shader.uniforms.uStrength = { value: 0 };
       shader.uniforms.screenSize = { value: new THREE.Vector2(size.width * dpr, size.height * dpr) };
 
       shader.vertexShader = `
         uniform float uTime;
+        uniform float uStrength;
         ${shader.vertexShader}
       `.replace(
         'void main() {',
         `
         void main() {
           vec3 displacedPos = position;
-          float wave1 = sin(position.x * 1.0 + uTime * 0.8) * 0.015;
-          float wave2 = cos(position.y * 2.0 - uTime * 0.5) * 0.01;
+          // Wave pattern: sin(axis * frequency + time * speed) * amplitude
+          // axis: position.x (width) or position.y (length)
+          // frequency: higher = more ripples, lower = wider swells
+          // speed: higher = faster movement
+          // amplitude: higher = taller waves, 0.0 = perfectly flat
+          // uStrength: scales the amplitude based on the water level (0.0 to 1.0)
+          float wave1 = sin(position.x * 1.0 + uTime * 0.8) * 0.015 * uStrength;
+          float wave2 = cos(position.y * 2.0 - uTime * 0.5) * 0.01 * uStrength;
           displacedPos.z += wave1 + wave2;
         `
       ).replace(

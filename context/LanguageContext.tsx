@@ -18,7 +18,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     // Load saved language preference on mount
     useEffect(() => {
         setMounted(true);
-        const saved = localStorage.getItem('floodwatch-language') as Language;
+        const saved = localStorage.getItem('FLOWS-language') as Language;
         if (saved && (saved === 'en' || saved === 'id')) {
             setLanguageState(saved);
         } else {
@@ -32,7 +32,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
     const setLanguage = (lang: Language) => {
         setLanguageState(lang);
-        localStorage.setItem('floodwatch-language', lang);
+        localStorage.setItem('FLOWS-language', lang);
     };
 
     // Translation function with parameter support

@@ -24,12 +24,6 @@ export function Footer() {
             <span>{t('appName')} — {t('tagline')}</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/admin"
-              className="hover:text-gray-300 transition-colors flex items-center gap-1"
-            >
-              {t('adminPortal')} <ExternalLink className="w-3 h-3" />
-            </Link>
             <span>© 2026 {t('allRightsReserved')}</span>
           </div>
         </div>
