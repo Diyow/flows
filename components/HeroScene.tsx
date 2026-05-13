@@ -503,7 +503,7 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
       {/* 1. Fallback Image Background (Always rendered to serve as loading state) */}
       <div className="absolute inset-0 w-full h-full bg-[#0a0a0f]">
         <img
-          src="/river.webp"
+          src="/riverimg.webp"
           alt="River Scene Fallback"
           className="w-full h-full object-cover opacity-50"
         />
