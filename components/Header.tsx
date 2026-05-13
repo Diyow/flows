@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock, Shield, Home, LogOut } from 'lucide-react';
+import { Clock, Shield, Home, LogOut, Box } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
+import { useSettings } from '@/context/SettingsContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
 
 interface HeaderProps {
@@ -16,6 +17,7 @@ interface HeaderProps {
 
 export function Header({ variant = 'default', userEmail, onSignOut, lastUpdate }: HeaderProps) {
   const { t } = useTranslation();
+  const { enable3D, setEnable3D } = useSettings();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export function Header({ variant = 'default', userEmail, onSignOut, lastUpdate }
         <div className="flex items-center gap-2 md:gap-4">
           {variant === 'default' ? (
             <>
-              <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-[10px] sm:text-sm">
+              <div className="flex items-center gap-1 sm:gap-2 text-gray-400 text-[10px] sm:text-sm mr-2">
                 <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                 <div className="flex flex-col sm:flex-row sm:gap-1">
                   <span className="hidden sm:inline">{t('updated')}:</span>
@@ -67,6 +69,20 @@ export function Header({ variant = 'default', userEmail, onSignOut, lastUpdate }
                   </span>
                 </div>
               </div>
+
+              {/* 3D Toggle */}
+              <button
+                onClick={() => setEnable3D(!enable3D)}
+                className={`p-2 rounded-lg transition-all ${
+                  enable3D 
+                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30' 
+                    : 'bg-gray-800 text-gray-500 border border-gray-700'
+                }`}
+                title={enable3D ? t('disable3D' as any) : t('enable3D' as any)}
+              >
+                <Box className={`w-4 h-4 sm:w-5 sm:h-5 ${enable3D ? 'animate-pulse' : ''}`} />
+              </button>
+
               <LanguageToggle />
               <Link
                 href="/admin"

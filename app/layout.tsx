@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   keywords: ["flood monitoring", "water level", "emergency alert", "disaster management", "Denpasar", "Bali"],
 };
 
+import { SettingsProvider } from "@/context/SettingsContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,11 +34,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0a0a0f] min-h-screen`}
       >
         <LanguageProvider>
-          <AuthProvider>
-            <WaterDataProvider>
-              {children}
-            </WaterDataProvider>
-          </AuthProvider>
+          <SettingsProvider>
+            <AuthProvider>
+              <WaterDataProvider>
+                {children}
+              </WaterDataProvider>
+            </AuthProvider>
+          </SettingsProvider>
         </LanguageProvider>
       </body>
     </html>

@@ -109,6 +109,7 @@ export const translations = {
         manageAdmins: 'Manage Admins',
         adminsRegistered: '{count} admin{s} registered',
         inviteAdmin: 'Invite Admin',
+        invite: 'Invite',
         cancel: 'Cancel',
         successfullyInvited: 'Successfully invited {email}',
         inviteNewAdmin: 'Invite New Admin',
@@ -199,6 +200,8 @@ export const translations = {
         allRightsReserved: 'All Rights Reserved',
         loggedInAs: 'Logged in as',
         adminPanel: 'FLOWS Admin Panel',
+        enable3D: 'Enable 3D Scene',
+        disable3D: 'Disable 3D Scene',
     },
 
     id: {
@@ -309,6 +312,7 @@ export const translations = {
         manageAdmins: 'Kelola Admin',
         adminsRegistered: '{count} admin terdaftar',
         inviteAdmin: 'Undang Admin',
+        invite: 'Undang',
         cancel: 'Batal',
         successfullyInvited: 'Berhasil mengundang {email}',
         inviteNewAdmin: 'Undang Admin Baru',
@@ -399,6 +403,8 @@ export const translations = {
         allRightsReserved: 'Hak Cipta Dilindungi',
         loggedInAs: 'Masuk sebagai',
         adminPanel: 'Panel Admin FLOWS',
+        enable3D: 'Aktifkan Adegan 3D',
+        disable3D: 'Nonaktifkan Adegan 3D',
     },
 } as const;
 

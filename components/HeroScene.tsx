@@ -388,8 +388,11 @@ interface HeroSceneProps {
   dangerLevel: number;
 }
 
+import { useSettings } from '@/context/SettingsContext';
+
 export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: HeroSceneProps) {
   const { t } = useTranslation();
+  const { enable3D } = useSettings();
 
   const [webglSupported, setWebglSupported] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
@@ -465,13 +468,15 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
 
   const cfg = statusConfig[status];
 
+  const show3D = webglSupported && enable3D;
+
   return (
     <div ref={containerRef} className="relative w-full h-[520px] md:h-[600px] rounded-2xl overflow-hidden  border-gray-800/60">
 
       {/* ============================================================
           3D CANVAS or FALLBACK IMAGE
           ============================================================ */}
-      {webglSupported ? (
+      {show3D ? (
         <Canvas
           gl={{ antialias: true, alpha: true }} // Smooth edges, transparent BG
           dpr={[1, 1.5]}                        // Device pixel ratio (retina)
