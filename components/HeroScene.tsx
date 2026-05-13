@@ -27,13 +27,14 @@
 
 'use client'; // Required: Three.js only works in the browser, not on the server
 
-import { Suspense, useRef, useEffect, useState } from 'react';
+import { Suspense, useRef, useEffect, useState, useLayoutEffect } from 'react';
 import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber';
 import {
   useGLTF,        // Hook to load .gltf/.glb 3D models
   Environment,    // Pre-built lighting environments (city, sunset, etc.)
   OrbitControls,  // Camera controls
   useDepthBuffer, // Renders depth buffer of the scene
+  Sparkles,       // Floating atmospheric particles
 } from '@react-three/drei';
 import * as THREE from 'three';
 import { Water2 } from 'three-stdlib';
@@ -46,7 +47,7 @@ const SMOOTHING_FACTOR = 0.5; // Higher = faster transitions, Lower = smoother/s
 /**
  * Loads and renders the GLTF river/channel 3D model.
  *
- * useGLTF('/models/scene.gltf') loads the file and returns:
+ * useGLTF('/models/river.gltf') loads the file and returns:
  *   - scene: the root THREE.Group containing all meshes/materials
  *   - nodes: individual named objects (Camera, Light, Plane, etc.)
  *   - materials: all materials used by the model
@@ -281,8 +282,29 @@ function CustomWater({
 }
 
 function RiverModel({ currentLevel, currentFlow, dangerLevel }: { currentLevel: number; currentFlow: number; dangerLevel: number }) {
-  const { scene, nodes } = useGLTF('/models/scene.gltf');
+  const { scene, nodes } = useGLTF('/models/river.gltf');
   const set = useThree((state) => state.set);
+
+  // Apply visual enhancements (Normal Boost, Roughness, AO)
+  useLayoutEffect(() => {
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        // Ensure child has a standard material to modify
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((mat) => {
+          if (mat instanceof THREE.MeshStandardMaterial) {
+            // 1. Boost normal map strength for extra surface detail
+            if (mat.normalMap) {
+              mat.normalScale.set(1.6, 1.6);
+            }
+
+            // 2. Increase roughness to reduce digital "shininess"
+            mat.roughness = Math.min(1.0, mat.roughness * 1.5 + 0.1);
+          }
+        });
+      }
+    });
+  }, [scene]);
 
   // size: 512 is a good balance between foam quality and performance (size: 0 was too heavy)
   const depthBuffer = useDepthBuffer({ frames: Infinity, size: 512 });
@@ -326,6 +348,7 @@ function RiverModel({ currentLevel, currentFlow, dangerLevel }: { currentLevel: 
   return (
     <>
       <primitive object={scene} />
+
       {waterNode && (
         <group position={waterNode.position} rotation={waterNode.rotation} scale={waterNode.scale}>
           <CustomWater
@@ -341,21 +364,13 @@ function RiverModel({ currentLevel, currentFlow, dangerLevel }: { currentLevel: 
   );
 }
 
-
-
-
-// ─── Loader ─────────────────────────────────────────────────────────
-/**
- * Shown inside the 3D canvas while the GLTF model is still loading.
- * Just a simple wireframe sphere so the user sees *something* quickly.
- */
-function Loader() {
-  return (
-    <mesh>
-      <sphereGeometry args={[0.5, 16, 16]} />
-      <meshStandardMaterial color="#06b6d4" wireframe />
-    </mesh>
-  );
+function SceneReady({ onReady }: { onReady: () => void }) {
+  useEffect(() => {
+    // Small delay to ensure materials and environment are fully applied
+    const timer = setTimeout(onReady, 100);
+    return () => clearTimeout(timer);
+  }, [onReady]);
+  return null;
 }
 
 // ─── HeroScene (main export) ────────────────────────────────────────
@@ -399,6 +414,7 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
   const [manualLevel, setManualLevel] = useState(currentLevel);
   const [manualFlow, setManualFlow] = useState(currentFlow);
   const [isVisible, setIsVisible] = useState(true);
+  const [isSceneReady, setIsSceneReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Optimization: Pause rendering when out of view
@@ -441,6 +457,15 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
     }
   }, []);
 
+  const show3D = webglSupported && enable3D;
+
+  // Reset scene ready state when 3D is toggled off, so it fades in again when toggled on
+  useEffect(() => {
+    if (!show3D) {
+      setIsSceneReady(false);
+    }
+  }, [show3D]);
+
   // Color/text config for each status level
   const statusConfig = {
     safe: {
@@ -468,59 +493,76 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
 
   const cfg = statusConfig[status];
 
-  const show3D = webglSupported && enable3D;
-
   return (
     <div ref={containerRef} className="relative w-full h-[520px] md:h-[600px] rounded-2xl overflow-hidden  border-gray-800/60">
 
       {/* ============================================================
           3D CANVAS or FALLBACK IMAGE
           ============================================================ */}
-      {show3D ? (
-        <Canvas
-          gl={{ antialias: true, alpha: true }} // Smooth edges, transparent BG
-          dpr={[1, 1.5]}                        // Device pixel ratio (retina)
-          style={{ background: 'transparent' }}
-          frameloop={isVisible ? 'always' : 'never'} // Stop rendering when out of view
-        >
-          {/* Suspense shows <Loader /> while the GLTF model downloads */}
-          <Suspense fallback={<Loader />}>
-            <RiverModel
-              currentLevel={debugMode ? manualLevel : currentLevel}
-              currentFlow={debugMode ? manualFlow : currentFlow}
-              dangerLevel={dangerLevel}
-            />
 
+      {/* 1. Fallback Image Background (Always rendered to serve as loading state) */}
+      <div className="absolute inset-0 w-full h-full bg-[#0a0a0f]">
+        <img
+          src="/river.webp"
+          alt="River Scene Fallback"
+          className="w-full h-full object-cover opacity-50"
+        />
+        {/* Subtle gradient to match the scene's mood */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-[#0a0a0f]/50" />
+      </div>
 
-            {/* Environment map: provides ambient reflections/lighting from HDRI */}
-            <Environment files="/models/EveningEnvironmentHDRI001_1K_HDR.exr" background />
+      {/* 2. Interactive 3D Canvas (Renders on top when ready) */}
+      {show3D && (
+        <div className={`absolute inset-0 transition-opacity duration-1000 ${isSceneReady ? 'opacity-100' : 'opacity-0'}`}>
+          <Canvas
+            // Initialize camera at roughly the same position as the GLTF camera
+            // to avoid "glitching" from [0,0,5] to the model view.
+            camera={{
+              position: [6.5, 6, 10.5],
+              fov: 45,
+              near: 0.1,
+              far: 100
+            }}
+            // 3. Use sRGB encoding (outputColorSpace) for accurate color
+            gl={{
+              antialias: true,
+              alpha: true,
+              outputColorSpace: THREE.SRGBColorSpace
+            }}
+            dpr={[1, 1.5]}                        // Device pixel ratio (retina)
+            style={{ background: 'transparent' }}
+            frameloop={isVisible ? 'always' : 'never'} // Stop rendering when out of view
+          >
+            {/* Suspense fallback={null} allows the background image to show while loading */}
+            <Suspense fallback={null}>
+              <RiverModel
+                currentLevel={debugMode ? manualLevel : currentLevel}
+                currentFlow={debugMode ? manualFlow : currentFlow}
+                dangerLevel={dangerLevel}
+              />
 
-            {/* User controls for the camera: auto-rotate slowly, lock up/down movement */}
-            <OrbitControls
-              target={[-0.83, 0, 3.3]}
-              autoRotate
-              autoRotateSpeed={-0.1}
-              enableZoom={true}
-              minDistance={5}
-              maxDistance={12.25}
-              enablePan={false}
-              minPolarAngle={Math.PI / 5} // Lock vertical rotation to original camera angle (60 deg)
-              maxPolarAngle={Math.PI / 3}
-              minAzimuthAngle={Math.PI / 7}
-              maxAzimuthAngle={Math.PI / 1.15}
-            />
-          </Suspense>
-        </Canvas>
-      ) : (
-        /* Fallback for when Hardware Acceleration or WebGL is disabled */
-        <div className="absolute inset-0 w-full h-full bg-[#0a0a0f]">
-          <img
-            src="/River.webp"
-            alt="River Scene Fallback"
-            className="w-full h-full object-cover opacity-50"
-          />
-          {/* Subtle gradient to match the scene's mood */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-[#0a0a0f]/50" />
+              {/* Environment map: provides ambient reflections/lighting from HDRI */}
+              <Environment files="/models/EveningEnvironmentHDRI001_1K_HDR.exr" background />
+
+              {/* User controls for the camera: auto-rotate slowly, lock up/down movement */}
+              <OrbitControls
+                target={[-0.83, 0, 3.3]}
+                autoRotate
+                autoRotateSpeed={-0.1}
+                enableZoom={true}
+                minDistance={5}
+                maxDistance={12.25}
+                enablePan={false}
+                minPolarAngle={Math.PI / 5} // Lock vertical rotation to original camera angle (60 deg)
+                maxPolarAngle={Math.PI / 3}
+                minAzimuthAngle={Math.PI / 7}
+                maxAzimuthAngle={Math.PI / 1.15}
+              />
+
+              {/* Helper to signal when the scene is fully loaded and ready to fade in */}
+              <SceneReady onReady={() => setIsSceneReady(true)} />
+            </Suspense>
+          </Canvas>
         </div>
       )}
 
@@ -649,4 +691,4 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
 
 // Pre-download the model as soon as this module loads,
 // so it's ready before the component mounts.
-useGLTF.preload('/models/scene.gltf');
+useGLTF.preload('/models/river.gltf');

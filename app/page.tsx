@@ -18,10 +18,17 @@ const HeroScene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[520px] md:h-[600px] rounded-2xl bg-gray-900/50 border border-gray-800/60 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-          <span className="text-gray-500 text-sm">Loading 3D scene…</span>
+      <div className="relative w-full h-[520px] md:h-[600px] rounded-2xl overflow-hidden bg-[#0a0a0f] border border-gray-800/60">
+        <img
+          src="/River.webp"
+          alt="River Scene Loading"
+          className="w-full h-full object-cover opacity-50"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-[#0a0a0f]/50" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-gray-500/50 text-xs uppercase tracking-widest animate-pulse font-medium">
+            Initializing 3D Scene
+          </span>
         </div>
       </div>
     ),
