@@ -30,13 +30,13 @@
 import { Suspense, useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber';
 import {
-  useGLTF,        // Hook to load .gltf/.glb 3D models
-  Environment,    // Pre-built lighting environments (city, sunset, etc.)
-  OrbitControls,  // Camera controls
-  useDepthBuffer, // Renders depth buffer of the scene
+  useGLTF,
+  Environment,
+  OrbitControls,
+  useDepthBuffer,
 } from '@react-three/drei';
 import * as THREE from 'three';
-import { Water2 } from 'three-stdlib';
+import { Water2, KTX2Loader } from 'three-stdlib';
 import { useTranslation } from '@/context/LanguageContext';
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────
@@ -281,7 +281,15 @@ function CustomWater({
 }
 
 function RiverModel({ currentLevel, currentFlow, dangerLevel }: { currentLevel: number; currentFlow: number; dangerLevel: number }) {
-  const { scene, nodes } = useGLTF('/models/scene.gltf');
+  const { gl } = useThree();
+  
+  // Use useGLTF with a callback to configure the KTX2 loader.
+  const { scene, nodes } = useGLTF('/models/river.gltf', false, false, (loader) => {
+    const ktx2Loader = new KTX2Loader();
+    ktx2Loader.setTranscoderPath('/basis/');
+    ktx2Loader.detectSupport(gl);
+    loader.setKTX2Loader(ktx2Loader);
+  });
   const set = useThree((state) => state.set);
 
   // size: 512 is a good balance between foam quality and performance (size: 0 was too heavy)
@@ -317,7 +325,34 @@ function RiverModel({ currentLevel, currentFlow, dangerLevel }: { currentLevel: 
     if (nodes.Water_Placeholder) {
       nodes.Water_Placeholder.visible = false;
     }
-  }, [nodes, camera, aspect]);
+
+    // Improve texture quality and reduce noise/shimmering from a distance
+    // by enabling anisotropic filtering on all materials.
+    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        const mat = mesh.material as any;
+        
+        // Handle both single and array materials
+        const materials = Array.isArray(mat) ? mat : [mat];
+        materials.forEach(m => {
+          if (m.map) {
+            m.map.anisotropy = maxAnisotropy;
+            m.map.needsUpdate = true;
+          }
+          if (m.normalMap) {
+            m.normalMap.anisotropy = maxAnisotropy;
+            m.normalMap.needsUpdate = true;
+          }
+          if (m.roughnessMap) {
+            m.roughnessMap.anisotropy = maxAnisotropy;
+            m.roughnessMap.needsUpdate = true;
+          }
+        });
+      }
+    });
+  }, [nodes, camera, aspect, gl, scene]);
 
   const waterNode = nodes.Water_Placeholder as THREE.Mesh;
 
@@ -647,6 +682,9 @@ export function HeroScene({ status, currentLevel, currentFlow, dangerLevel }: He
   );
 }
 
-// Pre-download the model as soon as this module loads,
-// so it's ready before the component mounts.
-useGLTF.preload('/models/scene.gltf');
+// Pre-download disabled to avoid KTX2 initialization issues before renderer is ready
+// useGLTF.preload('/models/river.gltf', true, true, (loader: any) => {
+//   const ktx2Loader = new KTX2Loader();
+//   ktx2Loader.setTranscoderPath('/basis/');
+//   loader.setKTX2Loader(ktx2Loader);
+// });
