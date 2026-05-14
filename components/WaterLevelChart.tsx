@@ -64,47 +64,49 @@ export function WaterLevelChart({
     };
 
     return (
-        <div className="h-full p-6 rounded-2xl bg-gray-800/50 border border-gray-700">
+        <div className="h-full p-4 sm:p-6 rounded-2xl bg-gray-800/50 border border-gray-700">
             <div className="flex items-center gap-2 mb-6">
                 <TrendingUp className="w-5 h-5 text-cyan-400" />
                 <h3 className="text-lg font-semibold text-white">{t('hourHistory')}</h3>
             </div>
 
-            <div className="h-64 md:h-80">
+            <div className="h-[280px] sm:h-[320px] lg:h-[380px]">
                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <LineChart data={chartData} margin={{ top: 10, right: 5, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
                         <XAxis
                             dataKey="time"
                             stroke="#6b7280"
-                            fontSize={12}
+                            fontSize={10}
                             tickLine={false}
                             axisLine={false}
                             interval="preserveStartEnd"
+                            minTickGap={25}
                         />
                         <YAxis
                             yAxisId="level"
                             stroke="#6b7280"
-                            fontSize={12}
+                            fontSize={10}
                             tickLine={false}
                             axisLine={false}
                             domain={levelDomain}
                             tickFormatter={(value) => `${value}m`}
+                            width={35}
                         />
                         {showFlow && (
                             <YAxis
                                 yAxisId="flow"
                                 orientation="right"
                                 stroke="#6b7280"
-                                fontSize={12}
+                                fontSize={10}
                                 tickLine={false}
                                 axisLine={false}
                                 domain={flowDomain}
                                 tickFormatter={(value) => `${value}`}
+                                width={30}
                             />
                         )}
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend />
 
                         {/* Reference Lines for Level Thresholds */}
                         <ReferenceLine
@@ -151,7 +153,7 @@ export function WaterLevelChart({
                 </ResponsiveContainer>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-4 text-sm">
+            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-cyan-500" />
                     <span className="text-gray-400">{t('waterLevel')}</span>

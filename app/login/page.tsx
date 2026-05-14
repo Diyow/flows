@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/context/LanguageContext';
 import { Mail, Lock, AlertCircle, ArrowLeft, Info } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -13,6 +16,7 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { signIn, isConfigured } = useAuth();
+    const { t } = useTranslation();
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -25,22 +29,24 @@ export default function LoginPage() {
             router.push('/admin');
         } catch (err) {
             console.error('Login error:', err);
-            setError('Invalid email or password. Please try again.');
+            setError(t('invalidCredentials'));
         }
 
         setLoading(false);
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
+        <div className="min-h-screen bg-[#0a0a0f] flex flex-col">
+            <Header />
+            <main className="flex-grow flex items-center justify-center p-4">
+                <div className="w-full max-w-md">
                 {/* Back Button */}
                 <Link
                     href="/"
                     className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back to Dashboard
+                    {t('backToDashboard')}
                 </Link>
 
                 {/* Login Card */}
@@ -48,8 +54,8 @@ export default function LoginPage() {
                     {/* Header */}
                     <div className="text-center mb-8">
                         <Image src="/FLOWS.png" alt="FLOWS Logo" width={120} height={120} className="w-28 h-28 object-contain mx-auto mb-4" />
-                        <h1 className="text-2xl font-bold text-white">Admin Login</h1>
-                        <p className="text-gray-400 mt-2">Access the monitoring dashboard</p>
+                        <h1 className="text-2xl font-bold text-white">{t('adminLogin')}</h1>
+                        <p className="text-gray-400 mt-2">{t('accessDashboard')}</p>
                     </div>
 
                     {/* Firebase Not Configured Warning */}
@@ -57,9 +63,10 @@ export default function LoginPage() {
                         <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
                             <Info className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                             <div className="text-amber-400 text-sm">
-                                <p className="font-medium mb-1">Firebase Not Configured</p>
+                                <p className="font-medium mb-1">{t('firebaseNotConfigured')}</p>
                                 <p className="text-amber-400/80">
-                                    To enable authentication, please configure your Firebase credentials.
+                                    {t('firebaseNotConfiguredDesc')}
+                                    <br />
                                     See <code className="bg-amber-500/20 px-1 rounded">SETUP.md</code> for instructions.
                                 </p>
                             </div>
@@ -79,7 +86,7 @@ export default function LoginPage() {
                         {/* Email Field */}
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-2">
-                                Email Address
+                                {t('emailAddress')}
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -101,7 +108,7 @@ export default function LoginPage() {
                         {/* Password Field */}
                         <div>
                             <label htmlFor="password" className="block text-sm font-medium text-gray-400 mb-2">
-                                Password
+                                {t('password')}
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -129,10 +136,10 @@ export default function LoginPage() {
                             {loading ? (
                                 <>
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Signing in...
+                                    {t('signingIn')}
                                 </>
                             ) : (
-                                'Sign In'
+                                t('signIn')
                             )}
                         </button>
                     </form>
@@ -141,7 +148,7 @@ export default function LoginPage() {
                     {!isConfigured && (
                         <div className="mt-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
                             <p className="text-blue-400 text-sm text-center">
-                                <strong>Demo Mode:</strong> The app is running without Firebase. Data is stored locally and will reset on page reload.
+                                <strong>{t('demoMode')}:</strong> {t('demoModeDesc')}
                             </p>
                         </div>
                     )}
@@ -149,9 +156,11 @@ export default function LoginPage() {
 
                 {/* Footer */}
                 <p className="text-center text-gray-500 text-sm mt-6">
-                    Protected area for authorized personnel only
+                    {t('protectedArea')}
                 </p>
-            </div>
+                </div>
+            </main>
+            <Footer />
         </div>
     );
 }

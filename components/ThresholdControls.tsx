@@ -50,7 +50,7 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }
     const hasChanges = warningLevel !== settings.warningLevel || dangerLevel !== settings.dangerLevel;
 
     return (
-        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
+        <div className="p-4 sm:p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
             <div className="flex items-center gap-2 mb-6">
                 <Settings className="w-5 h-5 text-blue-400" />
                 <h3 className="text-lg font-semibold text-white">{t('thresholdSettings')}</h3>
@@ -115,7 +115,7 @@ export function ThresholdControls({ settings, onUpdate, onLogEvent, adminEmail }
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-6 pt-4 border-t border-gray-700/50 flex gap-3">
+            <div className="mt-6 pt-4 border-t border-gray-700/50 flex flex-col sm:flex-row gap-3">
                 <button
                     onClick={handleReset}
                     disabled={!hasChanges || saving}

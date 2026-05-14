@@ -14,7 +14,7 @@ export function ManualAlertControl({ settings, onToggleAlarm, buzzerActive = fal
     const { t } = useTranslation();
 
     return (
-        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
+        <div className="p-4 sm:p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                     <Bell className={`w-5 h-5 ${buzzerActive ? 'text-red-400 animate-pulse' : 'text-amber-400'}`} />

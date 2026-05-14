@@ -85,9 +85,9 @@ export function EventLogs({ logs }: EventLogsProps) {
                 <table className="w-full">
                     <thead>
                         <tr className="z-20">
-                            <th className="sticky top-0 bg-gray-800/50 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">{t('timestamp')}</th>
-                            <th className="sticky top-0 bg-gray-800/50 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">{t('type')}</th>
-                            <th className="sticky top-0 bg-gray-800/50 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">{t('event')}</th>
+                            <th className="sticky top-0 bg-gray-800/90 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">{t('timestamp')}</th>
+                            <th className="sticky top-0 bg-gray-800/90 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">{t('type')}</th>
+                            <th className="sticky top-0 bg-gray-800/90 backdrop-blur-md text-left py-3 px-4 text-gray-400 text-sm font-medium border-b border-gray-700 z-10">{t('event')}</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -55,6 +55,16 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
         lat: sensorLocation.lat,
         lng: sensorLocation.lng,
     });
+    const [mapHeight, setMapHeight] = useState('280px');
+
+    useEffect(() => {
+        const updateHeight = () => {
+            setMapHeight(window.innerWidth < 640 ? '220px' : '280px');
+        };
+        updateHeight();
+        window.addEventListener('resize', updateHeight);
+        return () => window.removeEventListener('resize', updateHeight);
+    }, []);
 
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -126,7 +136,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
         editLocation.name !== location.name;
 
     return (
-        <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
+        <div className="p-4 sm:p-6 rounded-xl bg-gray-800/50 border border-gray-700 h-full flex flex-col">
             {/* Header */}
             <div className="flex items-center gap-2 mb-6">
                 <MapPin className="w-5 h-5 text-emerald-400" />
@@ -142,7 +152,11 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
             {isLoaded && apiKey && apiKey !== 'your_google_maps_key' ? (
                 <div className="rounded-xl overflow-hidden border border-gray-700 mb-5">
                     <GoogleMap
-                        mapContainerStyle={mapContainerStyle}
+                        mapContainerStyle={{
+                            width: '100%',
+                            height: mapHeight,
+                            borderRadius: '0.75rem',
+                        }}
                         center={mapCenter}
                         zoom={15}
                         options={mapOptions}
@@ -193,7 +207,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
             </div>
 
             {/* Lat/Lng Inputs */}
-            <div className="grid grid-cols-2 gap-4 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                 <div>
                     <label className="block text-sm font-medium text-gray-400 mb-2">
                         {t('latitude')}
@@ -246,7 +260,7 @@ export function SensorLocationSettings({ firebaseDb, onLogEvent, adminEmail }: S
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
                 <button
                     onClick={handleReset}
                     disabled={!hasChanges || saving}
